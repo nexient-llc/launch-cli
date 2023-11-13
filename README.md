@@ -15,6 +15,14 @@ More information on GitHub PATs can be found [here](https://docs.github.com/en/a
 
 The PAT must be provided to this script through the `GITHUB_TOKEN` environment variable. Alternate credential stores are not currently supported.
 
+### Generating a PAT
+
+To generate a PAT, visit your GitHub settings page, then navigate to Developer Tools, and finally Personal Access Tokens (https://github.com/settings/tokens).
+
+Currently, this tool has been tested with "Token (classic)" PATs. It may be possible to use a fine-grained PAT, if you manage to do this please let us know!
+
+Currently, this tool utilizes the `repo` scope. Additional scopes may be required in the future as the capabilities of the tool expand.
+
 ## Installation
 
 ### End User Installation
@@ -31,7 +39,7 @@ The PAT must be provided to this script through the `GITHUB_TOKEN` environment v
 
 ## Usage
 
-Currently, we expose one command:
+Currently, we expose one useful command:
 
 ```sh
 $ launch github access set-default
