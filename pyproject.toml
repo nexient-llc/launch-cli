@@ -23,7 +23,7 @@ launch = "launch.cli.entrypoint:cli"
 profile = "black"
 
 [tool.pytest.ini_options]
-minversion = "6.0"
+minversion = "7.0"
 addopts = "-ra"
 testpaths = [
     "tests"
