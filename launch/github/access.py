@@ -1,5 +1,6 @@
 import requests
 from github.Branch import Branch
+from github.Organization import Organization
 from github.Permissions import Permissions
 from github.Repository import Repository
 from github.Team import Team
@@ -67,7 +68,7 @@ def configure_default_branch_protection(repo: Repository, dry_run=True) -> None:
     default_branch: Branch = repo.get_branch(repo.default_branch)
     if not default_branch.name == "main":
         print(
-            f"WARNING: Repository at {repo.url} uses default branch {default_branch}, should be main!"
+            f"WARNING: Repository at {repo.url} uses default branch {default_branch.name}, should be main!"
         )
 
     default_protections = {
@@ -92,9 +93,9 @@ def configure_default_branch_protection(repo: Repository, dry_run=True) -> None:
             require_code_owner_reviews=True, required_approving_review_count=2
         )
         set_require_approval_of_most_recent_reviewable_push(
-            organization=repo.organization.login,
-            repository_name=repo.name,
-            branch_name=default_branch.name,
+            organization=repo.organization,
+            repository=repo,
+            branch=default_branch,
         )
     else:
         print(
@@ -103,19 +104,19 @@ def configure_default_branch_protection(repo: Repository, dry_run=True) -> None:
 
 
 def set_require_approval_of_most_recent_reviewable_push(
-    organization: str, repository_name: str, branch_name: str
+    organization: Organization, repository: Repository, branch: Branch
 ) -> None:
     """Hack to work around the fact that PyGithub doesn't support setting this configuration natively.
 
     Args:
-        organization (str): Name of the organization
-        repository_name (str): Name of the repository
-        branch_name (str): Name of the branch to protect
+        organization (Organization): GitHub Organization
+        repository (Repository): GitHub rRepository
+        branch_name (Branch): Repository Branch
 
     Raises:
         RuntimeError: Raised if there was an issue setting this configuration
     """
-    url = f"https://api.github.com/repos/{organization}/{repository_name}/branches/{branch_name}/protection/required_pull_request_reviews"
+    url = f"https://api.github.com/repos/{organization.login}/{repository.name}/branches/{branch.name}/protection/required_pull_request_reviews"
     payload = {"require_last_push_approval": True}
     try:
         response = requests.patch(url=url, json=payload, headers=github_headers())
@@ -123,6 +124,8 @@ def set_require_approval_of_most_recent_reviewable_push(
             raise RuntimeError(
                 f"Failed to set_require_approval_of_most_recent_reviewable_push to {url}: Status Code: {response.status_code} Body: {response.text}"
             )
+    except RuntimeError as re:
+        raise re
     except Exception as e:
         raise RuntimeError(
             f"Failed to set_require_approval_of_most_recent_reviewable_push to {url}"
