@@ -5,7 +5,7 @@ from github import Auth, Github
 
 
 @cache
-def read_github_token():
+def read_github_token() -> str:
     try:
         return os.environ["GITHUB_TOKEN"]
     except KeyError:
