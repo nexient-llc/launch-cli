@@ -111,7 +111,7 @@ def set_require_approval_of_most_recent_reviewable_push(
     Args:
         organization (Organization): GitHub Organization
         repository (Repository): GitHub Repository
-        branch_name (Branch): Repository Branch
+        branch (Branch): Repository Branch
 
     Raises:
         RuntimeError: Raised if there was an issue setting this configuration
