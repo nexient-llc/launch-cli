@@ -55,7 +55,7 @@ Upon sourcing the file or restarting, this will stop your shell from descending 
 
 ## Usage
 
-Currently, we the following commands are exposed:
+Currently, we have the following commands exposed:
 
 ```sh
 launch github access set-default
