@@ -5,7 +5,6 @@ from launch.github.hooks import (
     create_hook
 )
 from launch.github.auth import get_github_instance
-'{"url":"<url>","content_type":"json","insecure_ssl":"0"}'
 
 @click.command()
 @click.option(
@@ -24,9 +23,23 @@ from launch.github.auth import get_github_instance
     help="Use web to create a webhook. Default: web. This parameter only accepts the value web."
 )
 @click.option(
-    "--config", 
+    "--url", 
     required=True, 
-    help="Key/value pairs to provide settings for this webhook. E.x.: '{\"url\":\"<url>\",\"content_type\":\"json\",\"insecure_ssl\":\"0\"}'"
+    help="The URL to which the payloads will be delivered."
+)
+@click.option(
+    "--content-type", 
+    default="form",
+    help="The media type used to serialize the payloads. Supported values include json and form. The default is form."
+)
+@click.option(
+    "--secret", 
+    help="If provided, the secret will be used as the key to generate the HMAC hex digest value for delivery signature headers."
+)
+@click.option(
+    "--insecure-ssl", 
+    default=0,
+    help="Determines whether the SSL certificate of the host for url will be verified when delivering payloads. Supported values include 0 (verification is performed) and 1 (verification is not performed). The default is 0. We strongly recommend not setting this to 1 as you are subject to man-in-the-middle and other attacks."
 )
 @click.option(
     "--events",
@@ -45,12 +58,29 @@ from launch.github.auth import get_github_instance
     help="Perform a dry run that reports on what it would do, but does not create webhooks.",
 )
 
-def create(organization: str, repository_name: str, name: str, config: str, events: str, active: bool, dry_run: bool):
+def create(
+    organization: str, 
+    repository_name: str, 
+    name: str,
+    url: str, 
+    content_type: str, 
+    secret: str, 
+    insecure_ssl: int, 
+    events: str, 
+    active: bool, 
+    dry_run: bool
+):
     """Creates a webhook for a single repository."""
     g = get_github_instance()
 
+    config = {
+        "url": url,
+        "content_type": content_type,
+        "secret": secret,
+        "insecure_ssl": insecure_ssl,
+    }
 
     repository = g.get_organization(login=organization).get_repo(name=repository_name)
     if dry_run:
         print("DRY RUN! NOTHING WILL BE UPDATED IN GITHUB!")
-    create_hook(repo=repository, name=name, config=json.loads(config), events=json.loads(events),active=active,dry_run=dry_run)
+    create_hook(repo=repository, name=name, config=config, events=json.loads(events),active=active,dry_run=dry_run)
