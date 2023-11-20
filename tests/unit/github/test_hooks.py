@@ -5,7 +5,7 @@ def test_hooks_create_hook(mocker):
     repo = mocker.MagicMock()
 
     repo.name   = "launch-test-repo"
-    repo.url    = "launch-test-repo"
+    repo.url    = "https://launch-test-repo.url"
 
     hooks.create_hook(
         repo=repo,
@@ -22,7 +22,7 @@ def test_create_hook_dry_run(mocker):
     repo = mocker.MagicMock()
 
     repo.name   = "launch-test-repo"
-    repo.url    = "launch-test-repo"
+    repo.url    = "https://launch-test-repo.url"
 
     hooks.create_hook(
         repo=repo,
