@@ -5,7 +5,6 @@ from launch.github.hooks import (
     create_hook
 )
 from launch.github.auth import get_github_instance
-'{"url":"<url>","content_type":"json","insecure_ssl":"0"}'
 
 @click.command()
 @click.option(
