@@ -29,8 +29,8 @@ from launch.github.auth import get_github_instance
 )
 @click.option(
     "--content-type", 
-    default="form",
-    help="The media type used to serialize the payloads. Supported values include json and form. The default is form."
+    default="json",
+    help="The media type used to serialize the payloads. Supported values include json and form. The default for the launch-cli is json."
 )
 @click.option(
     "--secret", 
