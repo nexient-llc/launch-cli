@@ -8,5 +8,7 @@ def cli():
 
 
 from .github import github_group
+from .aws import aws_group
 
 cli.add_command(github_group)
+cli.add_command(aws_group)
