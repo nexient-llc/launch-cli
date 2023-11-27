@@ -25,11 +25,20 @@ from launch.local_repo.tags import (
     default=".",
     help="Predict next version of the repository located at this path. Can be relative or absolute, defaults to the current directory.",
 )
-def predict(repo_path: pathlib.Path):
+@click.option(
+    "--source-branch",
+    type=click.STRING,
+    help="Name of the branch that should be used to predict the next semantic version.",
+    default="",
+)
+def predict(repo_path: pathlib.Path, source_branch: str):
     """Predicts the next semantic version for a repository."""
 
     try:
-        active_branch = get_current_branch_name(repo_path=repo_path)
+        if not source_branch:
+            active_branch = get_current_branch_name(repo_path=repo_path)
+        else:
+            active_branch = source_branch
         predicted_version = predict_version(
             existing_tags=read_semantic_tags(repo_path=repo_path),
             branch_name=active_branch,
