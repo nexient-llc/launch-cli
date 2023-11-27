@@ -71,16 +71,26 @@ def predict(repo_path: pathlib.Path, source_branch: str):
     type=click.STRING,
     help="Name of the branch that should be used to predict the next semantic version.",
 )
-def apply(repo_path: pathlib.Path, source_branch: str):
-    """Predicts the next semantic version for a repository based on the provided source branch, then creates and pushes a tag."""
+@click.option(
+    "--pipeline",
+    type=click.BOOL,
+    is_flag=True,
+    help="Run this command in pipeline mode, which disables additional safety checks. End users should never need to specify this option, it should only be used in conjunction with pipelines that enforce a consistent repository state!",
+)
+def apply(repo_path: pathlib.Path, source_branch: str, pipeline: bool):
+    """Predicts the next semantic version for a repository based on the provided source branch, then creates and pushes a tag.
+
+    Run this command inside a repo that has had its branch merged to main in order to apply the next semantic version. When running this command locally, the repo *MUST* be on the `main` branch. For use with pipelines and detached HEADs, the --pipeline option may be supplied, which will skip the check to ensure that the branch is on main. Use of the --pipeline flag in non-pipeline scenarios is highly discouraged and may lead to improper tagging. User beware!
+    """
     # Safeguard to ensure that we can't accidentally bump a version if the branch is being merged against anything but main.
-    active_branch = get_current_branch_name(repo_path=repo_path)
-    if not active_branch == "main":
-        click.secho(
-            f"Failed to apply next version for repository at {repo_path}: repo is not on main branch!",
-            fg="red",
-        )
-        raise click.Abort()
+    if not pipeline:
+        active_branch = get_current_branch_name(repo_path=repo_path)
+        if not active_branch == "main":
+            click.secho(
+                f"Failed to apply next version for repository at {repo_path}: repo is not on main branch!",
+                fg="red",
+            )
+            raise click.Abort()
 
     try:
         predicted_version = predict_version(
