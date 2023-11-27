@@ -2,6 +2,7 @@ import os
 
 import pytest
 from click import testing as click_testing
+from git.repo import Repo
 
 
 @pytest.fixture
@@ -25,3 +26,13 @@ def set_environment_variables():
     yield
     os.environ.clear()
     os.environ.update(old_environment)
+
+
+@pytest.fixture(scope="function")
+def example_github_repo(tmp_path):
+    temp_repo = Repo.init(path=tmp_path)
+    tmp_path.joinpath("test.txt").write_text("Sample file")
+    temp_repo.index.add("test.txt")
+    temp_repo.index.commit("Added test.txt")
+    temp_repo.create_tag("0.1.0")
+    yield temp_repo
