@@ -1,5 +1,4 @@
 import itertools
-from enum import Enum
 
 from semver import Version
 
@@ -12,12 +11,6 @@ MAJOR_NAME_PARTS = ["release"]
 BREAKING_CHARS = ["!"]
 CAPITALIZE_FIRST_IS_BREAKING = True
 DEFAULT_VERSION = Version(major=0, minor=1, patch=0)
-
-
-class RevisionType(int, Enum):
-    MAJOR = 0
-    MINOR = 1
-    PATCH = 2
 
 
 class InvalidBranchNameException(Exception):
