@@ -73,6 +73,15 @@ def predict(repo_path: pathlib.Path, source_branch: str):
 )
 def apply(repo_path: pathlib.Path, source_branch: str):
     """Predicts the next semantic version for a repository based on the provided source branch, then creates and pushes a tag."""
+    # Safeguard to ensure that we can't accidentally bump a version if the branch is being merged against anything but main.
+    active_branch = get_current_branch_name(repo_path=repo_path)
+    if not active_branch == "main":
+        click.secho(
+            f"Failed to apply next version for repository at {repo_path}: repo is not on main branch!",
+            fg="red",
+        )
+        raise click.Abort()
+
     try:
         predicted_version = predict_version(
             existing_tags=read_semantic_tags(repo_path=repo_path),
