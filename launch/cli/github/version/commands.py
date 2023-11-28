@@ -1,4 +1,5 @@
 import pathlib
+from functools import wraps
 
 import click
 
@@ -11,26 +12,35 @@ from launch.local_repo.tags import (
 )
 
 
+def version_required_options_wrapper(f):
+    @wraps(f)
+    @click.option(
+        "--repo-path",
+        type=click.Path(
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            readable=True,
+            resolve_path=True,
+            path_type=pathlib.Path,
+        ),
+        default=".",
+        help="Work with the repository located at this path. Can be relative or absolute, defaults to the current directory.",
+    )
+    @click.option(
+        "--source-branch",
+        type=click.STRING,
+        help="Name of the branch that should be used to predict the next semantic version.",
+        required=True,
+    )
+    def wrapper(*args, **kwargs):
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
 @click.command()
-@click.option(
-    "--repo-path",
-    type=click.Path(
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
-        readable=True,
-        resolve_path=True,
-        path_type=pathlib.Path,
-    ),
-    default=".",
-    help="Predict next version of the repository located at this path. Can be relative or absolute, defaults to the current directory.",
-)
-@click.option(
-    "--source-branch",
-    type=click.STRING,
-    help="Name of the branch that should be used to predict the next semantic version.",
-    default="",
-)
+@version_required_options_wrapper
 def predict(repo_path: pathlib.Path, source_branch: str):
     """Predicts the next semantic version for a repository."""
 
@@ -54,29 +64,12 @@ def predict(repo_path: pathlib.Path, source_branch: str):
 
 @click.command()
 @click.option(
-    "--repo-path",
-    type=click.Path(
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
-        readable=True,
-        resolve_path=True,
-        path_type=pathlib.Path,
-    ),
-    default=".",
-    help="Increment version of the repository located at this path. Can be relative or absolute, defaults to the current directory.",
-)
-@click.option(
-    "--source-branch",
-    type=click.STRING,
-    help="Name of the branch that should be used to predict the next semantic version.",
-)
-@click.option(
     "--pipeline",
     type=click.BOOL,
     is_flag=True,
     help="Run this command in pipeline mode, which disables additional safety checks. End users should never need to specify this option, it should only be used in conjunction with pipelines that enforce a consistent repository state!",
 )
+@version_required_options_wrapper
 def apply(repo_path: pathlib.Path, source_branch: str, pipeline: bool):
     """Predicts the next semantic version for a repository based on the provided source branch, then creates and pushes a tag.
 
