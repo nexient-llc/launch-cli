@@ -53,7 +53,7 @@ def predict(repo_path: pathlib.Path, source_branch: str):
             existing_tags=read_semantic_tags(repo_path=repo_path),
             branch_name=active_branch,
         )
-        print(predicted_version)
+        click.echo(predicted_version)
     except Exception as e:
         click.secho(
             f"Failed to predict next version for repository at {repo_path}: {e}",
