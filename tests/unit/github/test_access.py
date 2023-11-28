@@ -1,5 +1,6 @@
 import logging
 import re
+from contextlib import ExitStack as does_not_raise
 
 import pytest
 import requests
@@ -58,7 +59,7 @@ def test_configure_default_branch_protection_warns_on_default_branch_name(
     repo.get_branch = mocker.MagicMock(return_value=mocked_default_branch)
 
     with caplog.at_level(logging.WARNING):
-        access.configure_default_branch_protection(repo=repo, dry_run=True)
+        access.configure_default_branch_protection(repository=repo, dry_run=True)
         assert len(caplog.records) > 0
         assert mocked_default_branch.name in caplog.text
 
@@ -73,7 +74,7 @@ def test_configure_default_branch_protection(mocker):
     with mocker.patch.context_manager(
         access, "set_require_approval_of_most_recent_reviewable_push"
     ):
-        access.configure_default_branch_protection(repo=repo, dry_run=False)
+        access.configure_default_branch_protection(repository=repo, dry_run=False)
         access.set_require_approval_of_most_recent_reviewable_push.assert_called_once()
 
     mocked_default_branch.edit_protection.assert_called_once()
@@ -91,7 +92,7 @@ def test_configure_default_branch_protection_dry_run(mocker):
     with mocker.patch.context_manager(
         access, "set_require_approval_of_most_recent_reviewable_push"
     ):
-        access.configure_default_branch_protection(repo=repo, dry_run=True)
+        access.configure_default_branch_protection(repository=repo, dry_run=True)
         access.set_require_approval_of_most_recent_reviewable_push.assert_not_called()
 
     mocked_default_branch.edit_protection.assert_not_called()
@@ -136,3 +137,33 @@ def test_set_require_approval_of_most_recent_reviewable_push_request_exception_r
         access.set_require_approval_of_most_recent_reviewable_push(
             organization=organization, repository=repository, branch=branch
         )
+
+
+@pytest.mark.parametrize(
+    "repo_name, expected_slug, raises",
+    [
+        (
+            "tf-cloud-wrapper_module-example",
+            "terraform-administrators",
+            does_not_raise(),
+        ),
+        (
+            "depr-tf-aws-wrapper_module-lambda_function",
+            "terraform-administrators",
+            does_not_raise(),
+        ),
+        ("caf-component-platform", "caf-administrators", does_not_raise()),
+        ("bad-prefix", None, pytest.raises(access.NoMatchingTeamException)),
+    ],
+)
+def test_select_administrative_team(repo_name, expected_slug, raises, mocker):
+    organization = mocker.MagicMock()
+    repository = mocker.MagicMock()
+    repository.name = repo_name
+
+    with raises:
+        result = access.select_administrative_team(
+            repository=repository, organization=organization
+        )
+        organization.get_team_by_slug.assert_called_with(expected_slug)
+        assert result is not None

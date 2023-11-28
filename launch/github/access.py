@@ -14,7 +14,19 @@ logging.getLogger("github.Requester").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-def grant_maintain(team: Team, repo: Repository, dry_run=True) -> None:
+class NoMatchingTeamException(Exception):
+    pass
+
+
+# Maps repo prefixes to the slug of the team responsible for administration
+REPO_PREFIX_ADMIN_TEAM_SLUG: dict[str, str] = {
+    "tf-": "terraform-administrators",
+    "depr-tf-": "terraform-administrators",
+    "caf-": "caf-administrators",
+}
+
+
+def grant_maintain(team: Team, repository: Repository, dry_run=True) -> None:
     expected_permissions = {
         "triage": True,
         "push": True,
@@ -23,7 +35,7 @@ def grant_maintain(team: Team, repo: Repository, dry_run=True) -> None:
         "admin": False,
     }
 
-    existing_permissions: Permissions = team.get_repo_permission(repo=repo)
+    existing_permissions: Permissions = team.get_repo_permission(repo=repository)
 
     needs_update = False
 
@@ -37,18 +49,20 @@ def grant_maintain(team: Team, repo: Repository, dry_run=True) -> None:
     if needs_update:
         if dry_run:
             logger.info(
-                f"Would have granted maintain permissions to {team.slug} on {repo.url}"
+                f"Would have granted maintain permissions to {team.slug} on {repository.url}"
             )
         else:
-            logger.info(f"Granting maintain permissions to {team.slug} on {repo.url}")
-            team.set_repo_permission(repo=repo, permission="maintain")
+            logger.info(
+                f"Granting maintain permissions to {team.slug} on {repository.url}"
+            )
+            team.set_repo_permission(repo=repository, permission="maintain")
     else:
         logger.warning(
-            f"Permissions are already in place for {team.slug} on {repo.url}"
+            f"Permissions are already in place for {team.slug} on {repository.url}"
         )
 
 
-def grant_admin(team: Team, repo: Repository, dry_run=True) -> None:
+def grant_admin(team: Team, repository: Repository, dry_run=True) -> None:
     expected_permissions = {
         "triage": True,
         "push": True,
@@ -57,7 +71,7 @@ def grant_admin(team: Team, repo: Repository, dry_run=True) -> None:
         "admin": True,
     }
 
-    existing_permissions: Permissions = team.get_repo_permission(repo=repo)
+    existing_permissions: Permissions = team.get_repo_permission(repo=repository)
 
     needs_update = False
 
@@ -71,22 +85,24 @@ def grant_admin(team: Team, repo: Repository, dry_run=True) -> None:
     if needs_update:
         if dry_run:
             logger.info(
-                f"Would have granted admin permissions to {team.slug} on {repo.url}"
+                f"Would have granted admin permissions to {team.slug} on {repository.url}"
             )
         else:
-            logger.info(f"Granting admin permissions to {team.slug} on {repo.url}")
-            team.set_repo_permission(repo=repo, permission="admin")
+            logger.info(
+                f"Granting admin permissions to {team.slug} on {repository.url}"
+            )
+            team.set_repo_permission(repo=repository, permission="admin")
     else:
         logger.warning(
-            f"Permissions are already in place for {team.slug} on {repo.url}"
+            f"Permissions are already in place for {team.slug} on {repository.url}"
         )
 
 
-def configure_default_branch_protection(repo: Repository, dry_run=True) -> None:
-    default_branch: Branch = repo.get_branch(repo.default_branch)
+def configure_default_branch_protection(repository: Repository, dry_run=True) -> None:
+    default_branch: Branch = repository.get_branch(repository.default_branch)
     if not default_branch.name == "main":
         logger.warning(
-            f"Repository at {repo.url} uses default branch {default_branch.name}, should be main!"
+            f"Repository at {repository.url} uses default branch {default_branch.name}, should be main!"
         )
 
     default_protections = {
@@ -104,19 +120,19 @@ def configure_default_branch_protection(repo: Repository, dry_run=True) -> None:
 
     if dry_run:
         logger.info(
-            f"Would have applied default branch protection to {default_branch.name} for repo {repo.url}"
+            f"Would have applied default branch protection to {default_branch.name} for repo {repository.url}"
         )
     else:
         logger.info(
-            f"Applying default branch protection to {default_branch.name} for repo {repo.url}"
+            f"Applying default branch protection to {default_branch.name} for repo {repository.url}"
         )
         default_branch.edit_protection(**default_protections)
         default_branch.edit_required_pull_request_reviews(
             require_code_owner_reviews=True, required_approving_review_count=2
         )
         set_require_approval_of_most_recent_reviewable_push(
-            organization=repo.organization,
-            repository=repo,
+            organization=repository.organization,
+            repository=repository,
             branch=default_branch,
         )
 
@@ -148,3 +164,15 @@ def set_require_approval_of_most_recent_reviewable_push(
         raise RuntimeError(
             f"Failed to set_require_approval_of_most_recent_reviewable_push to {url}"
         ) from e
+
+
+def select_administrative_team(
+    repository: Repository, organization: Organization
+) -> Team:
+    for name_prefix, team_slug in REPO_PREFIX_ADMIN_TEAM_SLUG.items():
+        if repository.name.startswith(name_prefix):
+            return organization.get_team_by_slug(team_slug)
+    else:
+        raise NoMatchingTeamException(
+            f"Repository {repository.name} not matched for any known administrative team."
+        )
