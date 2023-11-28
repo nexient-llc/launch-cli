@@ -1,6 +1,9 @@
+import logging
 import pathlib
 
 from git.repo import Repo
+
+logger = logging.getLogger(__name__)
 
 
 def get_current_branch_name(repo_path: pathlib.Path) -> str:

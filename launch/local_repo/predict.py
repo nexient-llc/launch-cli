@@ -1,6 +1,9 @@
 import itertools
+import logging
 
 from semver import Version
+
+logger = logging.getLogger(__name__)
 
 BRANCH_DELIMITER = "/"
 
@@ -42,10 +45,11 @@ def predict_version(
     breaking_change: bool = False
 
     if not len(existing_tags):
-        # No tags exist on this repo, so we can't really calculate the next version in a reliable way.
+        logger.warning(f"No tags exist on this repo, defaulting to {DEFAULT_VERSION}")
         return DEFAULT_VERSION
 
     latest_version = latest_tag(tags=existing_tags)
+    logger.debug(f"Got {latest_version=} as the latest tag")
 
     if not breaking_chars:
         breaking_chars = BREAKING_CHARS
@@ -59,8 +63,13 @@ def predict_version(
         itertools.chain(MAJOR_NAME_PARTS, MINOR_NAME_PARTS, PATCH_NAME_PARTS)
     )
 
+    logger.debug(f"Evaluating {revision_type=} against {valid_branch_revision_types=}")
+
     for breaking_char in breaking_chars:
         if breaking_char in revision_type:
+            logger.debug(
+                f"Detected {breaking_char=} in branch name, setting {breaking_change=}"
+            )
             breaking_change = True
             revision_type = revision_type.strip(breaking_char)
 
@@ -71,11 +80,17 @@ def predict_version(
 
     if capitalize_first_is_breaking:
         if revision_type[0] == revision_type[0].upper():
+            logger.debug(
+                f"Revision begins with a capital letter, setting {breaking_change=}"
+            )
             breaking_change = True
 
     if breaking_change or revision_type.lower().strip() in MAJOR_NAME_PARTS:
+        logger.debug("Bumping major version!")
         return latest_version.bump_major()
     elif revision_type.lower().strip() in MINOR_NAME_PARTS:
+        logger.debug("Bumping minor version!")
         return latest_version.bump_minor()
     else:
+        logger.debug("Bumping patch version!")
         return latest_version.bump_patch()

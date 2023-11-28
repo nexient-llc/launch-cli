@@ -1,3 +1,5 @@
+import logging
+
 import requests
 from github.Branch import Branch
 from github.Organization import Organization
@@ -6,6 +8,10 @@ from github.Repository import Repository
 from github.Team import Team
 
 from .auth import github_headers
+
+logging.getLogger("github.Requester").setLevel(logging.WARNING)
+
+logger = logging.getLogger(__name__)
 
 
 def grant_maintain(team: Team, repo: Repository, dry_run=True) -> None:
@@ -29,11 +35,17 @@ def grant_maintain(team: Team, repo: Repository, dry_run=True) -> None:
         needs_update = True
 
     if needs_update:
-        print(f"Granting maintain permissions to {team.slug} on {repo.url}")
-        if not dry_run:
+        if dry_run:
+            logger.info(
+                f"Would have granted maintain permissions to {team.slug} on {repo.url}"
+            )
+        else:
+            logger.info(f"Granting maintain permissions to {team.slug} on {repo.url}")
             team.set_repo_permission(repo=repo, permission="maintain")
     else:
-        print(f"Permissions are already in place for {team.slug} on {repo.url}")
+        logger.warning(
+            f"Permissions are already in place for {team.slug} on {repo.url}"
+        )
 
 
 def grant_admin(team: Team, repo: Repository, dry_run=True) -> None:
@@ -57,18 +69,24 @@ def grant_admin(team: Team, repo: Repository, dry_run=True) -> None:
         needs_update = True
 
     if needs_update:
-        print(f"Granting admin permissions to {team.slug} on {repo.url}")
-        if not dry_run:
+        if dry_run:
+            logger.info(
+                f"Would have granted admin permissions to {team.slug} on {repo.url}"
+            )
+        else:
+            logger.info(f"Granting admin permissions to {team.slug} on {repo.url}")
             team.set_repo_permission(repo=repo, permission="admin")
     else:
-        print(f"Permissions are already in place for {team.slug} on {repo.url}")
+        logger.warning(
+            f"Permissions are already in place for {team.slug} on {repo.url}"
+        )
 
 
 def configure_default_branch_protection(repo: Repository, dry_run=True) -> None:
     default_branch: Branch = repo.get_branch(repo.default_branch)
     if not default_branch.name == "main":
-        print(
-            f"WARNING: Repository at {repo.url} uses default branch {default_branch.name}, should be main!"
+        logger.warning(
+            f"Repository at {repo.url} uses default branch {default_branch.name}, should be main!"
         )
 
     default_protections = {
@@ -84,8 +102,12 @@ def configure_default_branch_protection(repo: Repository, dry_run=True) -> None:
         "allow_fork_syncing": True,
     }
 
-    if not dry_run:
-        print(
+    if dry_run:
+        logger.info(
+            f"Would have applied default branch protection to {default_branch.name} for repo {repo.url}"
+        )
+    else:
+        logger.info(
             f"Applying default branch protection to {default_branch.name} for repo {repo.url}"
         )
         default_branch.edit_protection(**default_protections)
@@ -96,10 +118,6 @@ def configure_default_branch_protection(repo: Repository, dry_run=True) -> None:
             organization=repo.organization,
             repository=repo,
             branch=default_branch,
-        )
-    else:
-        print(
-            f"Would have applied default branch protection to {default_branch.name} for repo {repo.url}"
         )
 
 

@@ -1,9 +1,12 @@
+import logging
 import pathlib
 from contextlib import suppress
 
 from git import TagReference
 from git.repo import Repo
 from semver import Version
+
+logger = logging.getLogger(__name__)
 
 
 def acquire_repo(repo_path: pathlib.Path) -> Repo:
@@ -17,22 +20,29 @@ def acquire_repo(repo_path: pathlib.Path) -> Repo:
 
 def read_tags(repo_path: pathlib.Path) -> list[str]:
     repo_instance = acquire_repo(repo_path=repo_path)
-    return [tag.name for tag in repo_instance.tags]
+    all_tags = [tag.name for tag in repo_instance.tags]
+    logger.debug(f"Discovered {len(all_tags)} tags")
+    return all_tags
 
 
 def read_semantic_tags(repo_path: pathlib.Path) -> list[Version]:
     all_tags = read_tags(repo_path=repo_path)
     semver_tags: list[Version] = []
     for tag in all_tags:
-        # If the tag doesn't align with SemVer, we can't do anything with it, but don't need to raise.
-        with suppress(ValueError):
-            semver_tags.append(Version.parse(tag))
+        try:
+            parsed_tag = Version.parse(tag)
+            semver_tags.append(parsed_tag)
+        except ValueError:
+            logger.debug(f"Dropping {tag=}, does not conform to semantic version")
+    logger.debug(f"Narrowed to {len(semver_tags)} tags")
     return semver_tags
 
 
 def create_version_tag(repo_path: pathlib.Path, version: Version) -> TagReference:
     repo_instance = acquire_repo(repo_path=repo_path)
-    return repo_instance.create_tag(str(version))
+    new_tag = repo_instance.create_tag(str(version))
+    logger.info(f"Created {new_tag=}")
+    return new_tag
 
 
 def push_version_tag(
@@ -40,3 +50,4 @@ def push_version_tag(
 ):
     repo_instance = acquire_repo(repo_path=repo_path)
     repo_instance.remote(origin_name).push(tag.name)
+    logger.debug(f"Pushed {tag=} to {origin_name=}")

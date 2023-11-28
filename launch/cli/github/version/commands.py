@@ -45,13 +45,9 @@ def predict(repo_path: pathlib.Path, source_branch: str):
     """Predicts the next semantic version for a repository."""
 
     try:
-        if not source_branch:
-            active_branch = get_current_branch_name(repo_path=repo_path)
-        else:
-            active_branch = source_branch
         predicted_version = predict_version(
             existing_tags=read_semantic_tags(repo_path=repo_path),
-            branch_name=active_branch,
+            branch_name=source_branch,
         )
         click.echo(predicted_version)
     except Exception as e:

@@ -1,3 +1,4 @@
+import logging
 import re
 
 import pytest
@@ -48,7 +49,7 @@ def test_grant_admin_dry_run(mocker):
 
 
 def test_configure_default_branch_protection_warns_on_default_branch_name(
-    mocker, capsys
+    mocker, caplog
 ):
     mocked_default_branch = mocker.MagicMock()
     mocked_default_branch.name = "not-main"
@@ -56,13 +57,10 @@ def test_configure_default_branch_protection_warns_on_default_branch_name(
     repo = mocker.MagicMock()
     repo.get_branch = mocker.MagicMock(return_value=mocked_default_branch)
 
-    access.configure_default_branch_protection(repo=repo, dry_run=True)
-
-    stdout, _ = capsys.readouterr()
-    assert "WARNING" in stdout
-    assert (
-        f"uses default branch {mocked_default_branch.name}, should be main!" in stdout
-    )
+    with caplog.at_level(logging.WARNING):
+        access.configure_default_branch_protection(repo=repo, dry_run=True)
+        assert len(caplog.records) > 0
+        assert mocked_default_branch.name in caplog.text
 
 
 def test_configure_default_branch_protection(mocker):

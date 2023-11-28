@@ -1,3 +1,5 @@
+import logging
+
 import click
 
 from launch.github.access import (
@@ -6,6 +8,8 @@ from launch.github.access import (
     grant_maintain,
 )
 from launch.github.auth import get_github_instance
+
+logger = logging.getLogger(__name__)
 
 
 @click.command()
@@ -32,7 +36,9 @@ def set_default(organization: str, repository_name: str, dry_run: bool):
     )
     repository = g.get_organization(login=organization).get_repo(name=repository_name)
     if dry_run:
-        print("DRY RUN! NOTHING WILL BE UPDATED IN GITHUB!")
+        click.secho(
+            "Performing a dry run, nothing will be updated in GitHub", fg="yellow"
+        )
     grant_maintain(team=platform_team, repo=repository, dry_run=dry_run)
     grant_admin(team=platform_admin_team, repo=repository, dry_run=dry_run)
     configure_default_branch_protection(repo=repository, dry_run=dry_run)
