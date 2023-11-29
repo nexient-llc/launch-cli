@@ -1,12 +1,20 @@
 import logging
 import pathlib
-from contextlib import suppress
 
 from git import TagReference
+from git.objects.commit import Commit
 from git.repo import Repo
 from semver import Version
 
 logger = logging.getLogger(__name__)
+
+
+class CommitNotTaggedException(Exception):
+    pass
+
+
+class CommitTagNotSemanticVersionException(Exception):
+    pass
 
 
 def acquire_repo(repo_path: pathlib.Path) -> Repo:
@@ -36,6 +44,41 @@ def read_semantic_tags(repo_path: pathlib.Path) -> list[Version]:
             logger.debug(f"Dropping {tag=}, does not conform to semantic version")
     logger.debug(f"Narrowed to {len(semver_tags)} tags")
     return semver_tags
+
+
+def read_version_tag(
+    repo_path: pathlib.Path, commit: Commit | None = None
+) -> TagReference:
+    repo_instance = acquire_repo(repo_path=repo_path)
+    if not commit:
+        commit = repo_instance.head.object
+    for discovered_tag in reversed(sorted(repo_instance.tags, key=lambda x: x.name)):
+        if discovered_tag.commit == commit:
+            return discovered_tag
+    raise CommitNotTaggedException(f"{commit.hexsha if commit else 'HEAD'} is untagged")
+
+
+def tag_is_semantic(tag: TagReference) -> bool:
+    try:
+        Version.parse(tag.name)
+        return True
+    except:
+        return False
+
+
+def read_semantic_version_tag(
+    repo_path: pathlib.Path, commit: Commit | None = None
+) -> Version:
+    repo_instance = acquire_repo(repo_path=repo_path)
+    if not commit:
+        commit = repo_instance.head.object
+    applicable_tags = list(filter(lambda x: x.commit == commit, repo_instance.tags))
+    if not len(applicable_tags):
+        raise CommitNotTaggedException()
+    semantic_tags = list(filter(lambda x: tag_is_semantic(x), applicable_tags))
+    if not len(semantic_tags):
+        raise CommitTagNotSemanticVersionException()
+    return Version.parse(sorted(semantic_tags, key=lambda x: x.name)[-1].name)
 
 
 def create_version_tag(repo_path: pathlib.Path, version: Version) -> TagReference:

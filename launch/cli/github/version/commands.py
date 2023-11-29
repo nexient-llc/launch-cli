@@ -1,4 +1,5 @@
 import pathlib
+import sys
 from functools import wraps
 
 import click
@@ -6,9 +7,12 @@ import click
 from launch.local_repo.branch import get_current_branch_name
 from launch.local_repo.predict import predict_version
 from launch.local_repo.tags import (
+    CommitNotTaggedException,
+    CommitTagNotSemanticVersionException,
     create_version_tag,
     push_version_tag,
     read_semantic_tags,
+    read_semantic_version_tag,
 )
 
 
@@ -92,6 +96,16 @@ def apply(repo_path: pathlib.Path, source_branch: str, pipeline: bool):
             fg="red",
         )
         raise click.Abort()
+
+    try:
+        existing_tag = read_semantic_version_tag(repo_path=repo_path)
+        click.secho(
+            f"Failed to apply next version for repository at {repo_path}: HEAD is already tagged {existing_tag}",
+            fg="red",
+        )
+        sys.exit(2)
+    except (CommitNotTaggedException, CommitTagNotSemanticVersionException):
+        pass
 
     try:
         new_tag = create_version_tag(repo_path=repo_path, version=predicted_version)
