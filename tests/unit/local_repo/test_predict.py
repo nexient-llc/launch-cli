@@ -50,14 +50,16 @@ def test_latest_tag():
         ["fix/should-patch", Version(1, 0, 1), does_not_raise()],
         ["bug/should-patch", Version(1, 0, 1), does_not_raise()],
         ["patch/should-patch", Version(1, 0, 1), does_not_raise()],
-        ["feat/should-minor", Version(1, 1, 0), does_not_raise()],
         ["feature/should-minor", Version(1, 1, 0), does_not_raise()],
-        ["release/should-major", Version(2, 0, 0), does_not_raise()],
         ["fix!/breaking-char-should-major", Version(2, 0, 0), does_not_raise()],
         ["Fix/breaking-cap-should-major", Version(2, 0, 0), does_not_raise()],
-        ["feat!/breaking-char-should-major", Version(2, 0, 0), does_not_raise()],
-        ["Feat/breaking-cap-should-major", Version(2, 0, 0), does_not_raise()],
         ["bad/name", Version(2, 0, 0), pytest.raises(InvalidBranchNameException)],
+        ["feat/is-not-valid-anymore", None, pytest.raises(InvalidBranchNameException)],
+        [
+            "release/is-not-valid-anymore",
+            None,
+            pytest.raises(InvalidBranchNameException),
+        ],
     ),
 )
 def test_predict(branch_name: str, expected_version: Version, raises):

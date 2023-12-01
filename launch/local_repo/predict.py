@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 BRANCH_DELIMITER = "/"
 
 PATCH_NAME_PARTS = ["fix", "bug", "patch"]
-MINOR_NAME_PARTS = ["feature", "feat"]
-MAJOR_NAME_PARTS = ["release"]
+MINOR_NAME_PARTS = ["feature"]
+MAJOR_NAME_PARTS = []
 
 BREAKING_CHARS = ["!"]
 CAPITALIZE_FIRST_IS_BREAKING = True
