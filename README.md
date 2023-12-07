@@ -4,7 +4,7 @@ Simple CLI utility for common Launch tasks. This is intended to be built upon as
 
 ## Prerequisites
 
-- asdf-vm
+- Python 3.11+ and pip
 - A GitHub account
 
 ## Getting Started
@@ -25,26 +25,37 @@ Currently, this tool utilizes the `repo` scope. Additional scopes may be require
 
 ## Installation
 
+There are two paths you can take to install, your choice will depend on what you intend to do with `launch-cli`. If you intend to use the tool's built-in commands as part of your normal role as a Launch engineer (this is the most common option), you should perform the **End User Installation** below. If you intend to develop additonal features for `launch-cli`, please follow the **Development Installation** below.
+
+For either case, you will need to have Python 3.11 or greater installed on your system. How you choose to install that is up to you, but the installation steps assume you have an executable called `python3.11` in your path and the `pip` module installed.
+
 ### End User Installation
 
-This assumes that the end user is utilizing the standard ~/.venv-dso environment that gets created when setting up a development environment using our Makefiles.
+1. Issue the following command to install the latest version:
 
-1. Clone this repository to your machine and enter the repository's directory.
-2. Run `asdf install` to ensure you have Python 3.11 available. If you receive an error about a missing plugin, issue `asdf plugin add python` first.
-3. Issue the command `python3 -m pip install .` to install the package.
-4. You can now use the `launch` command family from your CLI.
+```sh
+python3.11 -m pip install 'git+https://github.com/nexient-llc/launch-cli.git#egg=launch'
+```
+
+2. You can now use the `launch` command family from your CLI. Issue `launch --help` to confirm the launch command is available in your shell.
+
+In the unlikely event that you need to install a specific version of `launch-cli` you may specify a revision, branch name, or tag like so:
+
+```sh
+# Tag 0.1.0 is used here, but you could specify a branch name or commit hash if desired
+python3.11 -m pip install 'git+https://github.com/nexient-llc/launch-cli.git@0.1.0#egg=launch'
+```
 
 ### Development Installation
 
 1. Clone this repository to your machine and enter the repository's directory.
-2. Run `asdf install` to ensure you have Python 3.11 available. If you receive an error about a missing plugin, issue `asdf plugin add python` first.
-3. Optionally, but highly recommended, create a new virtual environment and activate it with `python3.11 -m venv .venv && source .venv/bin/activate`.
-4. Issue the command `python3 -m pip install -e '.[dev]'` to create an editable installation.
+2. Create a new virtual environment and activate it with `python3.11 -m venv .venv && source .venv/bin/activate`.
+4. Issue the command `python3.11 -m pip install -e '.[dev]'` to create an editable installation.
 5. You can now use the `launch` command family from your CLI, and changes made to most code should be available the next time you run the CLI command, but changes to the entrypoint or pyproject.toml may require that you issue the pip install command again to update the generated shortcut.
 
-### ZSH-specific configuration
+#### ZSH-specific configuration
 
-If you use ZSH as your shell, you'll need to make one further modification. By default, ZSH allows you to change directories without entering the cd command, which is a problem if you have a directory name that shadows the name of the command you're trying to run! Edit your ~/.zshrc file to include the following:
+If you use ZSH as your shell, we highly recommend you make one further modification to make development easier. By default, ZSH allows you to change directories without entering the cd command, which is a problem if you have a directory name that shadows the name of the command you're trying to run! Edit your ~/.zshrc file to include the following:
 
 ```sh
 # Disables changing directory without issuing the cd command
