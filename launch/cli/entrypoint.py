@@ -22,5 +22,7 @@ def cli(verbose):
 
 
 from .github import github_group
+from .pipeline import pipeline_group
 
 cli.add_command(github_group)
+cli.add_command(pipeline_group)

@@ -13,7 +13,9 @@ from launch.github.hooks import create_hook
     help="GitHub organization containing your repository. Defaults to the nexient-llc organization.",
 )
 @click.option(
-    "--repository-name", required=True, help="Name of the repository to be updated."
+    "--repository-name",
+    required=True,
+    help="Name of the repository to be updated."
 )
 @click.option(
     "--name",
@@ -21,7 +23,9 @@ from launch.github.hooks import create_hook
     help="Use web to create a webhook. Default: web. This parameter only accepts the value web.",
 )
 @click.option(
-    "--url", required=True, help="The URL to which the payloads will be delivered."
+    "--url",
+    required=True,
+    help="The URL to which the payloads will be delivered."
 )
 @click.option(
     "--content-type",
