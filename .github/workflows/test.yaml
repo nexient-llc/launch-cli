@@ -5,7 +5,7 @@ name: Python Tests
 
 on:
   push:
-    branches: [ "main" , "feature/github-action"]
+    branches: [ "*"]
   pull_request:
     branches: [ "main" ]
 
@@ -28,6 +28,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install '.[dev]'
+    - name: Validate launch command can be run
+      run: |
+        launch --help
     - name: Test with pytest
       run: |
         pytest
