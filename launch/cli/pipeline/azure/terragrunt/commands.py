@@ -22,7 +22,7 @@ from launch.pipeline.common.functions import *
     help="Perform a dry run that reports on what it would do, but does not create webhooks.",
 )
 def plan(
-    repo_url: str,
+    repository_url: str,
     skip_git: bool,
     dry_run: bool,
 ):
@@ -34,29 +34,33 @@ def plan(
         )
 
     if not skip_git:
-        repo = git_clone(clone_url=repo_url)
-        git_checkout(repository=repo)
+        repository = git_clone(clone_url=repository_url)
+        git_checkout(repository=repository)
 
-    # function terragrunt_plan {
-    #     install_asdf "${HOME}"
-    #     set_vars_script_and_clone_service
-    #     git_checkout "${MERGE_COMMIT_ID}" "${CODEBUILD_SRC_DIR}/${GIT_REPO}"
-    #     tool_versions_install "${CODEBUILD_SRC_DIR}/${GIT_REPO%"${PROPERTIES_REPO_SUFFIX}"}"
-    #     set_netrc "${GIT_SERVER_URL}" "${GIT_USERNAME}" "${GIT_TOKEN}"
-    #     cd "${CODEBUILD_SRC_DIR}/${GIT_REPO}" || exit 1
+    install_tool_versions()
+    set_netrc(password=????)
+    
+    #TODO:
+    #check for internals change
 
-    #     if check_git_changes_for_internals "${MERGE_COMMIT_ID}" "${BUILD_BRANCH}" && [ "${INTERNALS_PIPELINE}" == "true" ]; then
-    #         terragrunt_internals_loop "plan"
-    #     elif ! check_git_changes_for_internals "${MERGE_COMMIT_ID}" "${BUILD_BRANCH}" && [ "${INTERNALS_PIPELINE}" == "true" ]; then
-    #         echo "Exiting terragrunt plan as git changes found outside internals with this stage INTERNALS_PIPELINE == true"
-    #         exit 0
-    #     elif check_git_changes_for_internals "${MERGE_COMMIT_ID}" "${BUILD_BRANCH}" && [ "${INTERNALS_PIPELINE}" != "true" ]; then
-    #         echo "Exiting terragrunt plan as git changes found inside internals with this stage INTERNALS_PIPELINE != true"
-    #         exit 0
-    #     else
-    #         terragrunt_service_loop "plan"
-    #     fi
-    # }
+    
+
+    prepare_for_terragrunt(
+        repository=????,
+        properties_suffix=????,
+        target_environment=????,
+        cloud_provider=os.environ['LAUNCH_PROVIDER']
+    )
+
+    #TODO:
+    # Check if there are any changes to the internals folder
+    # If there are, run the terragrunt plan for the internals folder
+    # If there are not, run the terragrunt plan for the service folder
+    # If the stage is not INTERNALS_PIPELINE, then run the terragrunt plan for the service folder
+    
+
+    terragrunt_init()
+    terragrunt_plan()
 
 
 @click.command()

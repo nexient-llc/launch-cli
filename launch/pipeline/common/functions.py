@@ -6,6 +6,8 @@ import subprocess
 import git
 
 from git.repo import Repo
+import shutil
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -33,62 +35,88 @@ def git_checkout(repository: Repo, branch=None, new_branch=False):
 
 
 ## Terragrunt Specific Functions
-def run_terragrunt_init():
+# //TODO: verify this function works
+def terragrunt_init(run_all=True):
     logger.info("Running terragrunt init")
     try:
-        subprocess.run(['terragrunt', 'init', '--terragrunt-non-interactive'], check=True)
+        if run_all:
+            subprocess.run(['terragrunt', 'run-all', 'init', '--terragrunt-non-interactive'], check=True)
+        else:
+            subprocess.run(['terragrunt', 'init', '--terragrunt-non-interactive'], check=True)
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"An error occurred: {str(e)}")
 
-
-def terragrunt_plan(file=None):
+# //TODO: verify this function works
+def terragrunt_plan(file=None, run_all=True):
     logger.info("Running terragrunt plan")
+    if run_all:
+        subprocess_args = ['terragrunt', 'run_all', 'plan']
+    else:
+        subprocess_args = ['terragrunt', 'plan']
+
+    if file:
+        subprocess_args.append('-out')
+        subprocess_args.append(file)
     try:
-        if file is None:
-            subprocess.run(['terragrunt', 'plan'], check=True)
-        else:
-            subprocess.run(['terragrunt', 'plan', '-out', file], check=True)
+        subprocess.run(subprocess_args, check=True)
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"An error occurred: {str(e)}")
 
-
-def terragrunt_apply(file=None):
+# //TODO: verify this function works
+def terragrunt_apply(file=None, run_all=True):
     logger.info("Running terragrunt apply")
+    if run_all:
+        subprocess_args = ['terragrunt', 'run_all', 'apply', '-auto-approve']
+    else:
+        subprocess_args = ['terragrunt', 'apply', '-auto-approve']
+
+    if file:
+        subprocess_args.append('-var-file')
+        subprocess_args.append(file)
     try:
-        if file is None:
-            subprocess.run(['terragrunt', 'apply', '-auto-approve'], check=True)
-        else:
-            subprocess.run(['terragrunt', 'apply', '-var-file', file, '-auto-approve'], check=True)
+        subprocess.run(subprocess_args, check=True)
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"An error occurred: {str(e)}")
 
+# //TODO: verify this function works
+def prepare_for_terragrunt(
+        repository,
+        properties_suffix,
+        target_environment,
+        provider_config=None,
+        directory=os.path.expanduser("~"),
+    ):
 
-def traverse_terragrunt_dir(type):
-    os.chdir(f"{os.environ['CODEBUILD_SRC_DIR']}/{os.environ['GIT_REPO'].rstrip(os.environ['PROPERTIES_REPO_SUFFIX'])}/env/{os.environ['TARGETENV']}/")
+    terragrunt_dir=f"{directory}/{repository.rstrip({properties_suffix})}/env/{target_environment}"
+    properties_terragrunt_dir=f"{directory}/{repository.rstrip(properties_suffix)}{properties_suffix}/env/{target_environment}"
 
-    # Dir in format of environment/region/instance
-    for dir in glob.glob('./*/*'):
-        deploy_dir = dir.lstrip('./')
-        region_dir = deploy_dir.split('/')[0]
-        aws_profile = get_accounts_profile(f"{os.environ['CODEBUILD_SRC_DIR']}/{os.environ['GIT_REPO'].rstrip(os.environ['PROPERTIES_REPO_SUFFIX'])}/accounts.json", os.environ['TARGETENV'])
-        assume_iam_role(os.environ['ROLE_TO_ASSUME'], aws_profile, region_dir)
+    copy_files_and_dirs(terragrunt_dir, properties_terragrunt_dir)
 
-        os.chdir(f"{os.environ['CODEBUILD_SRC_DIR']}/{os.environ['GIT_REPO'].rstrip(os.environ['PROPERTIES_REPO_SUFFIX'])}/env/{os.environ['TARGETENV']}/{deploy_dir}/")
+    if provider_config.provider == 'aws':
+        aws_profile = get_accounts_profile(f"{directory}/{repository.rstrip(properties_suffix)}/accounts.json", target_environment)
+        assume_iam_role(cloud_config.aws.role_to_assume, aws_profile, cloud_config.aws.region)
 
-        for file in glob.glob(f"{os.environ['CODEBUILD_SRC_DIR']}/{os.environ['GIT_REPO'].rstrip(os.environ['PROPERTIES_REPO_SUFFIX'])}{os.environ['PROPERTIES_REPO_SUFFIX']}/env/{os.environ['TARGETENV']}/{deploy_dir}/*"):
-            subprocess.run(['cp', '--', file, f"{os.environ['CODEBUILD_SRC_DIR']}/{os.environ['GIT_REPO'].rstrip(os.environ['PROPERTIES_REPO_SUFFIX'])}/env/{os.environ['TARGETENV']}/{deploy_dir}/"], check=True)
 
-        run_terragrunt_init()
 
-        if type == "plan":
-            run_terragrunt_plan()
-        elif type == "apply":
-            run_terragrunt_apply()
-        elif type == "pre_deploy":
-            run_pre_deploy_test()
+def copy_files_and_dirs(src_dir, dst_dir):
+    if not os.path.exists(src_dir):
+        print(f"The source directory {src_dir} does not exist.")
+        return
 
+    for item in os.listdir(src_dir):
+        src_path = os.path.join(src_dir, item)
+        dst_path = os.path.join(dst_dir, item)
+
+        if os.path.isdir(src_path):
+            if not os.path.exists(dst_path):
+                shutil.copytree(src_path, dst_path)
+            else:
+                copy_files_and_dirs(src_path, dst_path)
+        else:
+            shutil.copy2(src_path, dst_path)
 
 ## Other Functions
+# //TODO: verify this function works
 def install_tool_versions(file='.tool-versions'):
     logger.info('Installing all asdf plugins under .tool-versions')
     try:
@@ -104,7 +132,7 @@ def install_tool_versions(file='.tool-versions'):
     except Exception as e:
         raise RuntimeError(f"An error occurred with asdf install {file}: {str(e)}") from e
 
-
+# //TODO: verify this function works
 def set_netrc(password, machine='github.com', login='nobody'):
     logger.info('Setting ~/.netrc variables')
     try:
