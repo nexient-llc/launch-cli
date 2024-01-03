@@ -1,10 +1,6 @@
 [project]
 name = "launch-cli"
 version = "0.1.1"
-authors = [
-    {name = "Chris Taylor", email = "chris11.taylor@nttdata.com"},
-    {name = "Aaron Christian", email = "aaron.christian@nttdata.com"}
-]
 description = "CLI tooling for common Launch functions"
 readme = "README.md"
 requires-python = ">=3.11"
