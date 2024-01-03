@@ -1,0 +1,29 @@
+import os
+import pytest
+
+from unittest.mock import patch, MagicMock
+from launch.pipeline.common.functions import *
+
+
+@pytest.fixture(scope="function")
+
+@patch('functions.json.load')
+@patch('builtins.open', new_callable=MagicMock)
+def test_read_key_value_from_file(mock_open, mock_json_load):
+    mock_json_load.return_value = {'key': 'value'}
+    assert read_key_value_from_file('file', 'key') == 'value'
+    mock_open.assert_called_once_with('file')
+    mock_json_load.assert_called_once()
+
+@patch('functions.json.load')
+@patch('builtins.open', new_callable=MagicMock)
+def test_read_key_value_from_file_no_key(mock_open, mock_json_load):
+    mock_json_load.return_value = {'another_key': 'value'}
+    with pytest.raises(KeyError):
+        read_key_value_from_file('file', 'key')
+
+@patch('builtins.open', new_callable=MagicMock)
+def test_read_key_value_from_file_no_file(mock_open):
+    mock_open.side_effect = FileNotFoundError
+    with pytest.raises(FileNotFoundError):
+        read_key_value_from_file('file', 'key')
