@@ -1,14 +1,20 @@
 [project]
-name = "launch"
-version = "0.1.0"
-authors = [
-    {name = "Chris Taylor", email = "chris11.taylor@nttdata.com"}
-]
+name = "launch-cli"
+version = "0.1.1"
 description = "CLI tooling for common Launch functions"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Apache 2.0"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = ["click>=8.1.7", "pygithub>=2.1.1", "click-spinner>=0.1.10", "gitpython>=3.1", "semver>=3.0"]
+
+[project.urls]
+Homepage = "https://github.com/nexient-llc/launch-cli"
+Issues = "https://github.com/nexient-llc/launch-cli/issues"
 
 [tool.setuptools]
 package-dir = {launch="launch"}
