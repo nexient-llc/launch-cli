@@ -1,38 +1,55 @@
 import pytest
 
 from unittest.mock import patch
-import launch.pipeline.common.functions as common
+from launch.pipeline.common.functions import *
 
 
-@pytest.fixture(scope="function")
+def test_source_directory_not_exists(mocker):
+    mocker.patch('os.path.exists', return_value=False)
+    with pytest.raises(RuntimeError, match="Source directory not found"):
+        copy_files_and_dirs("nonexistent/source", "destination")
 
-# copy_files_and_dirs
-@patch('functions.os.path.exists', return_value=True)
-@patch('functions.os.listdir', return_value=['file'])
-@patch('functions.os.path.isdir', return_value=False)
-@patch('functions.shutil.copy2')
-def test_copy_files_and_dirs_file(mock_copy2, mock_isdir, mock_listdir, mock_exists):
-    common.copy_files_and_dirs('source_dir', 'destination_dir')
-    mock_copy2.assert_called_once_with('source_dir/file', 'destination_dir/file')
+def test_create_destination_directory(mocker):
+    mocker.patch('os.path.exists', side_effect=lambda x: x == "source")
+    mock_makedirs = mocker.patch('os.makedirs')
+    mock_listdir = mocker.patch('os.listdir', return_value=[])
 
-@patch('functions.os.path.exists', return_value=True)
-@patch('functions.os.listdir', return_value=['dir'])
-@patch('functions.os.path.isdir', return_value=True)
-@patch('functions.shutil.copytree')
-def test_copy_files_and_dirs_dir_no_exist(mock_copytree, mock_isdir, mock_listdir, mock_exists):
-    common.copy_files_and_dirs('source_dir', 'destination_dir')
-    mock_copytree.assert_called_once_with('source_dir/dir', 'destination_dir/dir')
+    copy_files_and_dirs("source", "new/destination")
 
-@patch('functions.os.path.exists', return_value=True)
-@patch('functions.os.listdir', return_value=['dir'])
-@patch('functions.os.path.isdir', side_effect=[True, False])
-@patch('functions.shutil.copytree')
-@patch('functions.shutil.copy2')
-def test_copy_files_and_dirs_dir_exist(mock_copy2, mock_copytree, mock_isdir, mock_listdir, mock_exists):
-    common.copy_files_and_dirs('source_dir', 'destination_dir')
-    mock_copy2.assert_called_once_with('source_dir/dir', 'destination_dir/dir')
+    mock_makedirs.assert_called_once_with("new/destination")
+    mock_listdir.assert_called_once_with("source")
 
-@patch('functions.os.path.exists', return_value=False)
-def test_copy_files_and_dirs_no_source(mock_exists):
-    common.copy_files_and_dirs('source_dir', 'destination_dir')
-    mock_exists.assert_called_once_with('source_dir')
+def test_copy_files(mocker):
+    mocker.patch('os.path.exists', return_value=True)
+    mocker.patch('os.listdir', return_value=["file1.txt", "file2.txt"])
+    mocker.patch('os.path.join', side_effect=lambda a, b: f"{a}/{b}")
+    mocker.patch('os.path.isdir', return_value=False)
+    mock_copy2 = mocker.patch('shutil.copy2')
+
+    copy_files_and_dirs("source", "destination")
+
+    assert mock_copy2.call_args_list == [
+        mocker.call("source/file1.txt", "destination/file1.txt"),
+        mocker.call("source/file2.txt", "destination/file2.txt"),
+    ]
+
+def test_recursive_directory_copy(mocker):
+    mocker.patch('os.path.exists', return_value=True)
+    mocker.patch('os.listdir', return_value=["dir1"])
+    mocker.patch('os.path.isdir', side_effect=lambda x: x == "source/dir1")
+    mocker.patch('os.makedirs', side_effect=OSError("Directory exists"))
+
+    with patch('launch.pipeline.common.functions.copy_files_and_dirs') as mock_recursive_call: 
+        copy_files_and_dirs("source", "destination")
+        mock_recursive_call.assert_called_once_with("source/dir1", "destination/dir1")
+
+
+def test_exception_during_file_copy(mocker):
+    mocker.patch('os.path.exists', return_value=True)
+    mocker.patch('os.listdir', return_value=["file1.txt"])
+    mocker.patch('os.path.join', side_effect=lambda a, b: f"{a}/{b}")
+    mocker.patch('os.path.isdir', return_value=False)
+    mocker.patch('shutil.copy2', side_effect=Exception("Copy failed"))
+
+    with pytest.raises(RuntimeError, match="An error occurred"):
+        copy_files_and_dirs("source", "destination")

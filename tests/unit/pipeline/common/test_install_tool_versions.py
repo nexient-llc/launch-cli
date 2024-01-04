@@ -1,24 +1,38 @@
 import pytest
 
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open
 from launch.pipeline.common.functions import *
 
 
 @pytest.fixture(scope="function")
 
-# install_tool_versions
-def test_install_tool_versions_success():
-    mock_file_content = "python 3.8.1\nnodejs 12.18.3"
-    with patch('subprocess.run') as mock_run, \
-         patch('open', mock_open(read_data=mock_file_content)), \
-         patch('os.chdir') as mock_chdir:
-        install_tool_versions()
-        assert mock_run.call_count == 3  # Two plugins and one 'asdf install'
-        mock_chdir.assert_called_once()
+def test_install_tool_versions_success(mocker):
+    # Mock the open function and the subprocess.run call
+    mocker.patch("builtins.open", mock_open(read_data="tool1\n tool2"))
+    mock_run = mocker.patch("subprocess.run")
 
-def test_install_tool_versions_exception():
-    with patch('subprocess.run', side_effect=Exception('Test Error')), \
-         patch('open', mock_open(read_data="")), \
-         patch('os.chdir') as mock_chdir:
-        with pytest.raises(RuntimeError):
-            install_tool_versions()
+    install_tool_versions("fake_file")
+
+    # Check if subprocess.run was called correctly
+    mock_run.assert_has_calls([
+        mocker.call(['asdf', 'plugin', 'add', 'tool1'], check=True),
+        mocker.call(['asdf', 'plugin', 'add', 'tool2'], check=True),
+        mocker.call(['asdf', 'install'], check=True),
+    ])
+
+
+def test_install_tool_versions_file_read_exception(mocker):
+    # Mock open to raise an exception
+    mocker.patch("builtins.open", side_effect=IOError("File not found"))
+
+    with pytest.raises(RuntimeError, match="An error occurred with asdf install"):
+        install_tool_versions("fake_file")
+
+
+def test_install_tool_versions_subprocess_exception(mocker):
+    # Mock the open function and the subprocess.run call
+    mocker.patch("builtins.open", mock_open(read_data="tool1\n tool2"))
+    mocker.patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, ['asdf']))
+
+    with pytest.raises(RuntimeError, match="An error occurred with asdf install"):
+        install_tool_versions("fake_file")
