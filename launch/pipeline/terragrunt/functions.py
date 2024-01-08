@@ -3,7 +3,7 @@ import os
 import subprocess
 import os
 from launch.pipeline.provider.aws.functions import assume_role
-from launch.pipeline.common.functions import *
+from launch.pipeline.common.functions import copy_files_and_dirs, set_netrc, install_tool_versions, git_clone, git_checkout, check_git_changes
 
 
 logger = logging.getLogger(__name__)
@@ -75,25 +75,27 @@ def prepare_for_terragrunt(
     ):
     
     repository=None
-    
+
     # Get the repository name from the repository url from the last '/' to the '.git'
     repository_name = repository_url.split('/')[-1].split('.git')[0]
 
-    if not skip_git:
-        repository = git_clone(
-            target_dir=repository_name, 
-            clone_url=repository_url
-        )
-        git_clone(
-            target_dir=f"{repository_name}-{override['properties_suffix']}", 
-            clone_url=repository_url.replace(repository_name, f"{repository_name}-{override['properties_suffix']}")
-        )
-    else:
-        if not os.path.exists(repository_name.strip()):
-            raise RuntimeError(f"Cannot find git repository directories. Please rerun this inside the directory containing the git repository")
+    git_clone(
+        skip_git=skip_git, 
+        target_dir=repository_name, 
+        clone_url=repository_url
+    ) 
+    git_clone(
+        skip_git=skip_git,
+        target_dir=f"{repository_name}-{override['properties_suffix']}", 
+        clone_url=repository_url.replace(repository_name, f"{repository_name}-{override['properties_suffix']}")
+    )
 
     os.chdir(f"{path}/{repository_name}")
-    git_checkout(repository=repository, branch=commit_sha)
+    git_checkout(
+        repository=repository, 
+        branch=commit_sha
+    )
+
     install_tool_versions(
         file=override['tool_versions_file'],
     )
@@ -103,37 +105,12 @@ def prepare_for_terragrunt(
         login=override['login']
     )
 
-    git_diff = check_git_changes(
-        repository=repository,
-        commit_id=commit_sha, 
-        main_branch=override['main_branch'], 
-        directory=override['infrastructure_dir']
-    )
-    
-    if git_diff & is_infrastructure:
-        #TODO: this needs more expanision for various resources under internals for aws
-        if provider_config.provider == 'aws':
-            exec_dir = f"{override['infrastructure_dir']}"
-        else:
-            raise RuntimeError(f"Provider: {provider_config.provider}, is_infrastructure: {is_infrastructure}, and running terragrunt on infrastructure directory: {override['infrastructure_dir']} is not supported")
-    elif not git_diff and  is_infrastructure:
-        raise RuntimeError(f"No  {override['infrastructure_dir']} folder, however, is_infrastructure: {is_infrastructure}")
-    elif git_diff and not is_infrastructure:
-        raise RuntimeError(f"Changes found in {override['infrastructure_dir']} folder, however, is_infrastructure: {is_infrastructure}")
-    else:
-        exec_dir = f"{override['environment_dir']}/{target_environment}"
-
-    # Copy files and directories from the properties repository to the terragrunt directory
-    if is_infrastructure:
-        path=f"{path}/{repository_name}/{override['infrastructure_dir']}"
-        properties_path=f"{path}/{repository_name}-{override['properties_suffix']}/{override['infrastructure_dir']}"
-    else:
-        path=f"{path}/{repository_name}/{override['environment_dir']}/{target_environment}"
-        properties_path=f"{path}/{repository_name}-{override['properties_suffix']}/{override['environment_dir']}/{target_environment}"
-
     copy_files_and_dirs(
-        source_dir=properties_path.strip(), 
-        destination_dir=path.strip()
+        is_infrastructure=is_infrastructure,
+        repository_name=repository_name,
+        path=path, 
+        target_environment=target_environment, 
+        override=override
     )
 
     # If the Provider is AZURE there is a prequisite requirement of logging into azure
@@ -141,8 +118,28 @@ def prepare_for_terragrunt(
     # If the provider is AWS, we need to assume the role for deployment. 
     if provider_config:
         if provider_config.provider == 'aws':
-            logger.info(f"Cloud provider: {provider_config.provider}")
-            profile = read_key_value_from_file(f"{repository_name}/accounts.json", target_environment)
-            assume_role(provider_config.aws.role_to_assume, profile, provider_config.aws.region)
-            
+            assume_role(
+                provider_config=provider_config, 
+                repository_name=repository_name, 
+                target_environment=target_environment
+            )
+
+    git_diff = check_git_changes(
+        repository=repository,
+        commit_id=commit_sha, 
+        main_branch=override['main_branch'], 
+        directory=override['infrastructure_dir']
+    )
+    if git_diff & is_infrastructure:
+        #TODO: this needs more expanision for various resources under internals for aws
+        if provider_config.provider == 'aws':
+            exec_dir = f"{override['infrastructure_dir']}"
+        else:
+            raise RuntimeError(f"Provider: {provider_config.provider}, is_infrastructure: {is_infrastructure}, and running terragrunt on infrastructure directory: {override['infrastructure_dir']} is not supported")
+    elif not git_diff and  is_infrastructure:
+        raise RuntimeError(f"No {override['infrastructure_dir']} folder, however, is_infrastructure: {is_infrastructure}")
+    elif git_diff and not is_infrastructure:
+        raise RuntimeError(f"Changes found in {override['infrastructure_dir']} folder, however, is_infrastructure: {is_infrastructure}")
+    else:
+        exec_dir = f"{override['environment_dir']}/{target_environment}"
     os.chdir(exec_dir)

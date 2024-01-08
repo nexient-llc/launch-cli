@@ -1,8 +1,7 @@
 import pytest
 import subprocess
-
 from unittest.mock import patch, MagicMock
-from launch.pipeline.terragrunt.functions import *
+from launch.pipeline.terragrunt.functions import terragrunt_plan
 
 
 @pytest.fixture(scope="function")

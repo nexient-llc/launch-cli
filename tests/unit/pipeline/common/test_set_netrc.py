@@ -1,8 +1,7 @@
 import os
 import pytest
-
 from unittest.mock import mock_open
-from launch.pipeline.common.functions import *
+from launch.pipeline.common.functions import set_netrc
 
 
 def test_set_netrc_success(mocker):

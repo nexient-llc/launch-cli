@@ -1,7 +1,7 @@
 import git
 import pytest
 from unittest.mock import patch, MagicMock
-from launch.pipeline.common.functions import *
+from launch.pipeline.common.functions import git_checkout
 
 class MockRepo:
     def __init__(self):

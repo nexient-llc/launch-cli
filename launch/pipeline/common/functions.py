@@ -8,22 +8,24 @@ import json
 from git.repo import Repo
 import shutil
 import os
-from launch.pipeline.provider.aws.functions import assume_role
 
 
 logger = logging.getLogger(__name__)
 
 ## GIT Specific Functions
-def git_clone(target_dir, clone_url: string) -> Repo:
-    try:
-        repository = Repo.clone_from(clone_url, target_dir)
-        logger.info(f"Repository {clone_url} cloned successfully to {target_dir}")
-    except git.GitCommandError as e:
-        raise RuntimeError(f"An error occurred while cloning the repository: {clone_url}") from e
-    return repository
+def git_clone(skip_git, target_dir, clone_url: string) -> Repo:
+    if not skip_git:
+        try:
+            logger.info(f"Attempting to clone repository: {clone_url} into {target_dir}")
+            repository = Repo.clone_from(clone_url, target_dir)
+            logger.info(f"Repository {clone_url} cloned successfully to {target_dir}")
+        except git.GitCommandError as e:
+            logger.error(f"Error occurred while cloning the repository: {clone_url}, Error: {e}")
+            raise RuntimeError(f"An error occurred while cloning the repository: {clone_url}") from e
+        return repository
 
 
-def git_checkout(repository: Repo, branch=None, new_branch=False):
+def git_checkout(repository: Repo, branch=None, new_branch=False) -> None:
     if branch:
         try:
             if new_branch:
@@ -93,7 +95,14 @@ def read_key_value_from_file(file, key) -> string:
         raise FileNotFoundError(f"File not found: {file}")
 
 
-def copy_files_and_dirs(source_dir, destination_dir):
+def copy_files_and_dirs(is_infrastructure, repository_name, path, target_environment, override) -> None:
+    if is_infrastructure:
+        destination_dir=f"{path}/{repository_name}/{override['infrastructure_dir']}".strip()
+        source_dir=f"{path}/{repository_name}-{override['properties_suffix']}/{override['infrastructure_dir']}".strip()
+    else:
+        destination_dir=f"{path}/{repository_name}/{override['environment_dir']}/{target_environment}".strip()
+        source_dir=f"{path}/{repository_name}-{override['properties_suffix']}/{override['environment_dir']}/{target_environment}".strip()
+    
     if not os.path.exists(source_dir):
         raise RuntimeError(f"Source directory not found: {source_dir}")
     if not os.path.exists(destination_dir):
@@ -112,7 +121,7 @@ def copy_files_and_dirs(source_dir, destination_dir):
                 raise RuntimeError(f"An error occurred: {str(e)}") from e
 
 
-def install_tool_versions(file):
+def install_tool_versions(file) -> None:
     logger.info('Installing all asdf plugins under .tool-versions')
     try:
         with open(file, 'r') as file:
@@ -127,7 +136,7 @@ def install_tool_versions(file):
         raise RuntimeError(f"An error occurred with asdf install {file}: {str(e)}") from e
 
 
-def set_netrc(password, machine, login):
+def set_netrc(password, machine, login) -> None:
     logger.info('Setting ~/.netrc variables')
     try:
         with open(os.path.expanduser('~/.netrc'), 'a') as file:

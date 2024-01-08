@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from launch.pipeline.terragrunt.functions import *
+from launch.pipeline.terragrunt.functions import check_git_changes
+
 
 # Test when the commit hash is the same as the main branch
 def test_commit_hash_same_as_main_branch():
