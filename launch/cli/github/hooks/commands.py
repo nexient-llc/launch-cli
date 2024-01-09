@@ -2,6 +2,7 @@ import json
 
 import click
 
+from launch import GITHUB_ORG_NAME
 from launch.github.auth import get_github_instance
 from launch.github.hooks import create_hook
 
@@ -9,8 +10,8 @@ from launch.github.hooks import create_hook
 @click.command()
 @click.option(
     "--organization",
-    default="nexient-llc",
-    help="GitHub organization containing your repository. Defaults to the nexient-llc organization.",
+    default=GITHUB_ORG_NAME,
+    help=f"GitHub organization containing your repository. Defaults to the {GITHUB_ORG_NAME} organization.",
 )
 @click.option(
     "--repository-name", required=True, help="Name of the repository to be updated."

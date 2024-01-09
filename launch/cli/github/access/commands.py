@@ -2,6 +2,7 @@ import logging
 
 import click
 
+from launch import GITHUB_ORG_NAME
 from launch.github.access import (
     NoMatchingTeamException,
     configure_default_branch_protection,
@@ -17,8 +18,8 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.option(
     "--organization",
-    default="nexient-llc",
-    help="GitHub organization containing your repository. Defaults to the nexient-llc organization.",
+    default=GITHUB_ORG_NAME,
+    help=f"GitHub organization containing your repository. Defaults to the {GITHUB_ORG_NAME} organization.",
 )
 @click.option(
     "--repository-name", required=True, help="Name of the repository to be updated."
