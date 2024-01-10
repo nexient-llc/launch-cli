@@ -1,7 +1,19 @@
 import logging
+import os
 import sys
 
 import click
+
+from launch.env import UPDATE_ALLOW_PRERELEASE, UPDATE_CHECK
+from launch.update import check_for_updates
+
+
+@click.command("version")
+def get_version():
+    from launch import SEMANTIC_VERSION
+
+    logging.info(f"Launch CLI Version {SEMANTIC_VERSION}")
+    sys.exit(0)
 
 
 @click.group(name="cli", invoke_without_command=True)
@@ -20,20 +32,32 @@ import click
     default=False,
     help="Prints the current version of the tool and immediately exits.",
 )
-def cli(verbose, version):
+@click.pass_context
+def cli(context: click.core.Context, verbose: bool, version: bool):
     """Launch CLI tooling to help automate common tasks performed by Launch engineers and their clients."""
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.INFO,
         format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s",
         datefmt="%F %T %Z",
     )
-    if version:
-        from launch import SEMANTIC_VERSION
 
-        logging.info(f"Launch CLI Version {SEMANTIC_VERSION}")
-        sys.exit(0)
+    if UPDATE_CHECK and not context.invoked_subcommand == "pipeline":
+        new_version = check_for_updates(include_prerelease=UPDATE_ALLOW_PRERELEASE)
+        if new_version:
+            click.secho(
+                f"Version {new_version} of Launch-CLI is now available!", fg="yellow"
+            )
+            click.secho(
+                "To install the latest version, execute the following command: "
+            )
+            click.secho("    pip install --update launch-cli", fg="yellow")
+    if context.invoked_subcommand is None and not version:
+        click.echo(cli.get_help(context))
+    if version:
+        context.invoke(get_version)
 
 
 from .github import github_group
 
+cli.add_command(get_version)
 cli.add_command(github_group)

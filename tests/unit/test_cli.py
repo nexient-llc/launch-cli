@@ -1,13 +1,15 @@
 import pathlib
 
-from launch.cli.entrypoint import cli
+import pytest
+
+from launch.cli import entrypoint
 from launch.cli.github.access.commands import set_default
 from launch.cli.github.hooks.commands import create
 from launch.cli.github.version.commands import apply, predict
 
 
 def test_cli_help(cli_runner):
-    result = cli_runner.invoke(cli, "--help")
+    result = cli_runner.invoke(entrypoint.cli, "--help")
     assert "Launch CLI" in result.output
     assert not result.exception
 
@@ -80,3 +82,41 @@ def test_github_version_apply_tag_exists_exit_code(cli_runner, example_github_re
         f"--repo-path {example_github_repo.working_dir} --source-branch feature/foo",
     )
     assert result.exit_code == 2
+
+
+def test_cli_update_general_env_var_not_set(cli_runner, mocker):
+    mock = mocker.patch.object(entrypoint, "check_for_updates", return_value=None)
+    result = cli_runner.invoke(entrypoint.cli, ["github", "--help"])
+    assert "Command family for GitHub-related tasks." in result.output
+    assert not result.exception
+    mock.assert_not_called()
+
+
+# The presence of this variable, not its value, determines whether or not we perform the update check. Even falsy values trigger a check!
+@pytest.mark.parametrize("env_var_value", ["0", "1", "false", "true", "foo"])
+def test_cli_update_general_env_var_set(env_var_value, cli_runner, mocker):
+    # In this context, this call should remain mocked since it would otherwise reach out to GitHub and can induce rate limiting!
+    mock = mocker.patch.object(entrypoint, "check_for_updates", return_value=None)
+    result = cli_runner.invoke(
+        entrypoint.cli,
+        ["github", "--help"],
+        env={"LAUNCH_CLI_CHECK_UPDATES": env_var_value},
+    )
+    assert "Command family for GitHub-related tasks." in result.output
+    assert not result.exception
+    mock.assert_called_once()
+
+
+@pytest.mark.skip(
+    "TODO: Figure out how Aaron is doing his pipeline mocks and perform the same operations here."
+)
+def test_cli_update_pipeline_env_var_not_set():
+    pass
+
+
+@pytest.mark.skip(
+    "TODO: Figure out how Aaron is doing his pipeline mocks and perform the same operations here."
+)
+@pytest.mark.parametrize("env_var_value", ["0", "1", "false", "true", "foo"])
+def test_cli_update_pipeline_env_var_set(env_var_value):
+    pass
