@@ -2,7 +2,7 @@ import logging
 import os
 from functools import cache
 
-from github import Auth, Github
+from github import Auth, Consts, Github
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +22,17 @@ def github_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {read_github_token()}"}
 
 
-def get_github_instance(token: str | None = None) -> Github:
+def get_github_instance(token: str | None = None, timeout: int | None = None) -> Github:
+    if timeout is None:
+        timeout = Consts.DEFAULT_TIMEOUT
     if not token:
         logger.debug("Token wasn't passed, reading from environment.")
         token = read_github_token()
     auth = Auth.Token(token)
-    return Github(auth=auth)
+    return Github(auth=auth, timeout=timeout)
+
+
+def get_anonymous_github_instance(timeout: int | None = None) -> Github:
+    if timeout is None:
+        timeout = Consts.DEFAULT_TIMEOUT
+    return Github(auth=None, timeout=timeout)
