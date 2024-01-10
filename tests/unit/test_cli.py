@@ -85,26 +85,26 @@ def test_github_version_apply_tag_exists_exit_code(cli_runner, example_github_re
 
 
 def test_cli_update_general_env_var_not_set(cli_runner, mocker):
-    mock = mocker.patch.object(entrypoint, "check_for_updates", return_value=None)
+    # Mocked since we don't want to reach out to GitHub and potentially induce rate limiting!
+    mocked_update_check = mocker.patch.object(
+        entrypoint, "check_for_updates", return_value=None
+    )
     result = cli_runner.invoke(entrypoint.cli, ["github", "--help"])
     assert "Command family for GitHub-related tasks." in result.output
     assert not result.exception
-    mock.assert_not_called()
+    mocked_update_check.assert_not_called()
 
 
-# The presence of this variable, not its value, determines whether or not we perform the update check. Even falsy values trigger a check!
-@pytest.mark.parametrize("env_var_value", ["0", "1", "false", "true", "foo"])
-def test_cli_update_general_env_var_set(env_var_value, cli_runner, mocker):
-    # In this context, this call should remain mocked since it would otherwise reach out to GitHub and can induce rate limiting!
-    mock = mocker.patch.object(entrypoint, "check_for_updates", return_value=None)
-    result = cli_runner.invoke(
-        entrypoint.cli,
-        ["github", "--help"],
-        env={"LAUNCH_CLI_CHECK_UPDATES": env_var_value},
+def test_cli_update_general_env_var_set(cli_runner, mocker):
+    # Mocked since we don't want to reach out to GitHub and potentially induce rate limiting!
+    mocker.patch("launch.cli.entrypoint.UPDATE_CHECK", new=True)
+    mocked_update_check = mocker.patch.object(
+        entrypoint, "check_for_updates", return_value=None
     )
+    result = cli_runner.invoke(entrypoint.cli, ["github", "--help"])
     assert "Command family for GitHub-related tasks." in result.output
     assert not result.exception
-    mock.assert_called_once()
+    mocked_update_check.assert_called_once()
 
 
 @pytest.mark.skip(

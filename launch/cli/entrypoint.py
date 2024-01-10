@@ -40,7 +40,7 @@ def cli(context: click.core.Context, verbose: bool, version: bool):
         format="%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s",
         datefmt="%F %T %Z",
     )
-
+    # breakpoint()
     if UPDATE_CHECK and not context.invoked_subcommand == "pipeline":
         new_version = check_for_updates(include_prerelease=UPDATE_ALLOW_PRERELEASE)
         if new_version:
