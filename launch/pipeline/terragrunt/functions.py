@@ -105,13 +105,13 @@ def prepare_for_terragrunt(
         login=override['login']
     )
 
-    copy_files_and_dirs(
-        is_infrastructure=is_infrastructure,
-        repository_name=repository_name,
-        path=path, 
-        target_environment=target_environment, 
-        override=override
-    )
+    # copy_files_and_dirs(
+    #     is_infrastructure=is_infrastructure,
+    #     repository_name=repository_name,
+    #     path=path, 
+    #     target_environment=target_environment, 
+    #     override=override
+    # )
 
     # If the Provider is AZURE there is a prequisite requirement of logging into azure
     # i.e. az login, or service principal is already applied to the environment. 
