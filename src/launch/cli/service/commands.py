@@ -4,6 +4,7 @@ import logging
 import json
 import os
 import re
+import subprocess
 from typing import IO, Any
 from jinja2 import Environment, FileSystemLoader
 from launch.github.auth import get_github_instance
@@ -11,7 +12,7 @@ from launch.github.repo import create_repository, clone_repository
 from launch.cli.github.access.commands import set_default
 from launch.service.common import create_dirs_and_copy_files, traverse_and_render
 
-from launch import GITHUB_ORG_NAME, SERVICE_SKELETON, MAIN_BRANCH
+from launch import GITHUB_ORG_NAME, SERVICE_SKELETON, MAIN_BRANCH, INIT_BRANCH
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,11 @@ logger = logging.getLogger(__name__)
     help="The name of the main branch.",
 )
 @click.option(
+    "--init-branch",
+    default=INIT_BRANCH,
+    help="The name of the main branch.",
+)
+@click.option(
     "--in-file",
     required=True,
     type=click.File('r'),
@@ -80,6 +86,7 @@ def create(
     public: bool,
     visibility: str,
     main_branch: str,
+    init_branch: str,
     in_file: IO[Any],
     dry_run: bool,
 ):
@@ -92,28 +99,33 @@ def create(
         
     service_path =f"{os.getcwd()}/{name}"
     
-    # g = get_github_instance()
+    g = get_github_instance()
     
-    # skeleton_repo = clone_repository(
-    #     repository_url=skeleton_url,
-    #     target=name,
-    #     branch=skeleton_branch
-    # )
+    skeleton_repo = clone_repository(
+        repository_url=skeleton_url,
+        target=name,
+        branch=skeleton_branch
+    )
 
-    # service_repo = create_repository(
-    #     g=g,
-    #     organization=organization,
-    #     name=name,
-    #     description=description,
-    #     public=public,
-    #     visibility=visibility,
-    # )
+    service_repo = create_repository(
+        g=g,
+        organization=organization,
+        name=name,
+        description=description,
+        public=public,
+        visibility=visibility,
+    )
+    
+    # Since we copied the skeleton repo, we need to update the origin``
+    skeleton_repo.delete_remote('origin')
+    origin = skeleton_repo.create_remote('origin', service_repo.clone_url)
+    origin.push(refspec='{}:{}'.format(skeleton_branch, main_branch))
+    context.invoke(set_default, organization=organization, repository_name=name, dry_run=dry_run)
 
-    #TEMP
-    if not os.path.exists(service_path):
-        os.makedirs(f"{service_path}/platform")
-        shutil.copytree('./.launch/', f"{service_path}/.launch")
-       
+    # PyGithub doesn't have good support with interacting with local repos
+    subprocess.run(["git", "pull", "origin", main_branch], cwd=service_path)
+    subprocess.run(["git", "checkout", "-b", init_branch], cwd=service_path)
+
     service_config = json.load(in_file)
     create_dirs_and_copy_files(f"{service_path}/platform", service_config['platform'])
 
@@ -129,9 +141,10 @@ def create(
         j2_env
     )
 
+    # Remove the .launch directory
     shutil.rmtree(f"{service_path}/.launch")
 
-    # skeleton_repo.delete_remote('origin')
-    # origin = skeleton_repo.create_remote('origin', service_repo.clone_url)
-    # origin.push(refspec='{}:{}'.format(skeleton_branch, main_branch))
-    # context.invoke(set_default, organization=organization, repository_name=name, dry_run=dry_run)
+    # PyGithub doesn't have good support with interacting with local repos
+    subprocess.run(["git", "add", "."], cwd=service_path)
+    subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=service_path)
+    subprocess.run(["git", "push", "--set-upstream", "origin", init_branch], cwd=service_path)
