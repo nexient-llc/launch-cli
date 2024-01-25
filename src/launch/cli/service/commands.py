@@ -99,28 +99,28 @@ def create(
         
     service_path =f"{os.getcwd()}/{name}"
     
-    # g = get_github_instance()
+    g = get_github_instance()
     
-    # skeleton_repo = clone_repository(
-    #     repository_url=skeleton_url,
-    #     target=name,
-    #     branch=skeleton_branch
-    # )
+    skeleton_repo = clone_repository(
+        repository_url=skeleton_url,
+        target=name,
+        branch=skeleton_branch
+    )
 
-    # service_repo = create_repository(
-    #     g=g,
-    #     organization=organization,
-    #     name=name,
-    #     description=description,
-    #     public=public,
-    #     visibility=visibility,
-    # )
+    service_repo = create_repository(
+        g=g,
+        organization=organization,
+        name=name,
+        description=description,
+        public=public,
+        visibility=visibility,
+    )
     
-    # # Since we copied the skeleton repo, we need to update the origin
-    # skeleton_repo.delete_remote('origin')
-    # origin = skeleton_repo.create_remote('origin', service_repo.clone_url)
-    # origin.push(refspec='{}:{}'.format(skeleton_branch, main_branch))
-    # context.invoke(set_default, organization=organization, repository_name=name, dry_run=dry_run)
+    # Since we copied the skeleton repo, we need to update the origin
+    skeleton_repo.delete_remote('origin')
+    origin = skeleton_repo.create_remote('origin', service_repo.clone_url)
+    origin.push(refspec='{}:{}'.format(skeleton_branch, main_branch))
+    context.invoke(set_default, organization=organization, repository_name=name, dry_run=dry_run)
 
     # PyGithub doesn't have good support with interacting with local repos
     subprocess.run(["git", "pull", "origin", main_branch], cwd=service_path)
@@ -147,7 +147,7 @@ def create(
     # Remove the .launch directory
     shutil.rmtree(f"{service_path}/.launch")
 
-    # # PyGithub doesn't have good support with interacting with local repos
-    # subprocess.run(["git", "add", "."], cwd=service_path)
-    # subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=service_path)
-    # subprocess.run(["git", "push", "--set-upstream", "origin", init_branch], cwd=service_path)
+    # PyGithub doesn't have good support with interacting with local repos
+    subprocess.run(["git", "add", "."], cwd=service_path)
+    subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=service_path)
+    subprocess.run(["git", "push", "--set-upstream", "origin", init_branch], cwd=service_path)
