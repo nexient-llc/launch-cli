@@ -5,11 +5,10 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
-def create_dirs_and_copy_files(base_path, nested_dict, file_path_key='properties_file'):
+def create_dirs_and_copy_files(base_path, nested_dict, props_path_key='properties_file', props_file_name='terraform.tfvars'):
     for key, value in nested_dict.items():
-        if key == file_path_key and isinstance(value, str):
-            file_name = os.path.basename(value)
-            destination = os.path.join(base_path, file_name)
+        if key == props_path_key and isinstance(value, str):
+            destination = os.path.join(base_path, props_file_name)
             if os.path.exists(value):
                 shutil.copy(value, destination)
                 logger.info(f"Copied {value} to {destination}")
