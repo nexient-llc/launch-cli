@@ -54,6 +54,22 @@ def terragrunt_apply(file=None, run_all=True):
         raise RuntimeError(f"An error occurred: {str(e)}")
 
 
+def terragrunt_destroy(file=None, run_all=True):
+    logger.info("Running terragrunt destroy")
+    if run_all:
+        subprocess_args = ['terragrunt', 'run-all', 'destroy', '-auto-approve']
+    else:
+        subprocess_args = ['terragrunt', 'destroy', '-auto-approve']
+
+    if file:
+        subprocess_args.append('-var-file')
+        subprocess_args.append(file)
+    try:
+        subprocess.run(subprocess_args, check=True)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"An error occurred: {str(e)}")
+
+
 # This logic is used to get everything ready for terragrunt. This includes:
 # 1. Cloning the repository
 # 2. Checking out the commit sha

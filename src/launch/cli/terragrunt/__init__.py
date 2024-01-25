@@ -1,6 +1,6 @@
 import click
 
-from .commands import plan, apply
+from .commands import plan, apply, destroy
 
 @click.group(name="terragrunt")
 def terragrunt_group():
@@ -9,3 +9,4 @@ def terragrunt_group():
 
 terragrunt_group.add_command(plan)
 terragrunt_group.add_command(apply)
+terragrunt_group.add_command(destroy)
