@@ -25,11 +25,10 @@ def git_clone(skip_git, target_dir, clone_url: string) -> Repo:
             if clone_url.endswith('.git'):
                 clone_url = clone_url[:-4]
             repo_name = clone_url.split('/')[-1:]
-            logger.info(f"repo_name: {repo_name}")
             repository = Repo(f"./{repo_name[0]}")
-        except git.GitCommandError as e:
+        except (git.GitCommandError, git.exc.NoSuchPathError) as e:
             logger.error(f"Error occurred while getting the repository: {clone_url}, Error: {e}")
-            raise RuntimeError(f"An error occurred while clgettingoning the repository: {clone_url}") from e
+            raise RuntimeError(f"An error occurred while getting the repository: {clone_url}") from e
         return repository
 
 

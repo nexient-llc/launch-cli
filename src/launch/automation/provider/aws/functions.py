@@ -1,7 +1,7 @@
 import logging
 import json
 import subprocess
-from launch.pipeline.common.functions import read_key_value_from_file
+from launch.automation.common.functions import read_key_value_from_file
 
 logger = logging.getLogger(__name__)
 

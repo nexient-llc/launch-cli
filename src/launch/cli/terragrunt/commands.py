@@ -2,7 +2,7 @@ import logging
 import os
 import click
 
-from launch.pipeline.terragrunt.functions import *
+from launch.automation.terragrunt.functions import *
 import os
 import os
 

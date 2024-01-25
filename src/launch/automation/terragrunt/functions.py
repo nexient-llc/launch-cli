@@ -2,8 +2,8 @@ import logging
 import os
 import subprocess
 import os
-from launch.pipeline.provider.aws.functions import assume_role
-from launch.pipeline.common.functions import set_netrc, install_tool_versions, git_clone, git_checkout, check_git_changes
+from launch.automation.provider.aws.functions import assume_role
+from launch.automation.common.functions import set_netrc, install_tool_versions, git_clone, git_checkout, check_git_changes
 
 
 logger = logging.getLogger(__name__)
@@ -146,4 +146,5 @@ def prepare_for_terragrunt(
         raise RuntimeError(f"Changes found in {override['infrastructure_dir']} folder, however, is_infrastructure: {is_infrastructure}")
     else:
         exec_dir = f"{override['environment_dir']}/{target_environment}"
+
     os.chdir(exec_dir)
