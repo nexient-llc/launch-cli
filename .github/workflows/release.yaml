@@ -3,8 +3,6 @@ on:
     types:
       - published
 
-if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-
 name: release
 
 jobs:
