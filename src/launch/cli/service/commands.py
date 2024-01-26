@@ -135,8 +135,10 @@ def create(
     # Jinja2 creation
     with open(f"{service_path}/.launch/jinja2/file_structure.json", 'r') as file:
         j2_file_structure = json.load(file)
+
     template_dir = f"{service_path}/.launch/jinja2/{service_config['provider']}/"
     j2_env = Environment(loader=FileSystemLoader(template_dir))
+
     traverse_and_render(
         service_path, 
         j2_file_structure,
