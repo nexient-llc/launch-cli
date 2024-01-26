@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--commit-sha",
-    help="The commit SHA to checkout in the repository.",
+    help="The commit SHA or branch to checkout in the repository.",
 )
 @click.option(
     "--target-environment",
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
     "--skip-git",
     is_flag=True,
     default=False,
-    help="If set, it will ignore cloning and checking out the git repository and it's properties. ",
+    help="If set, it will ignore cloning and checking out the git repository and it's properties.",
 )
 @click.option(
     "--is-infrastructure",
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--path",
     default=os.path.expanduser("~"),
-    help="",
+    help="Working directory path. Defaults to home (~).",
 )
 @click.option(
     "--override",
@@ -69,7 +69,7 @@ logger = logging.getLogger(__name__)
     "--dry-run",
     is_flag=True,
     default=False,
-    help="Perform a dry run that reports on what it would do, but does not create webhooks.",
+    help="Perform a dry run that reports on what it would do, but does not perform any action.",
 )
 def plan(
     repository_url: str,
@@ -120,7 +120,7 @@ def plan(
 )
 @click.option(
     "--commit-sha",
-    help="The commit SHA to checkout in the repository.",
+    help="The commit SHA or branch to checkout in the repository.",
 )
 @click.option(
     "--target-environment",
@@ -136,7 +136,7 @@ def plan(
     "--skip-git",
     is_flag=True,
     default=False,
-    help="If set, it will ignore cloning and checking out the git repository and it's properties. ",
+    help="If set, it will ignore cloning and checking out the git repository and it's properties.",
 )
 @click.option(
     "--is-infrastructure",
@@ -147,7 +147,7 @@ def plan(
 @click.option(
     "--path",
     default=os.path.expanduser("~"),
-    help="",
+    help="Working directory path. Defaults to home (~).",
 )
 @click.option(
     "--override",
@@ -167,7 +167,7 @@ def plan(
     "--dry-run",
     is_flag=True,
     default=False,
-    help="Perform a dry run that reports on what it would do, but does not create webhooks.",
+    help="Perform a dry run that reports on what it would do, but does not perform any action.",
 )
 def apply(
     repository_url: str,
@@ -218,7 +218,7 @@ def apply(
 )
 @click.option(
     "--commit-sha",
-    help="The commit SHA to checkout in the repository.",
+    help="The commit SHA or branch to checkout in the repository.",
 )
 @click.option(
     "--target-environment",
@@ -234,7 +234,7 @@ def apply(
     "--skip-git",
     is_flag=True,
     default=False,
-    help="If set, it will ignore cloning and checking out the git repository and it's properties. ",
+    help="If set, it will ignore cloning and checking out the git repository and it's properties.",
 )
 @click.option(
     "--is-infrastructure",
@@ -245,7 +245,7 @@ def apply(
 @click.option(
     "--path",
     default=os.path.expanduser("~"),
-    help="",
+    help="Working directory path. Defaults to home (~).",
 )
 @click.option(
     "--override",
@@ -265,7 +265,7 @@ def apply(
     "--dry-run",
     is_flag=True,
     default=False,
-    help="Perform a dry run that reports on what it would do, but does not create webhooks.",
+    help="Perform a dry run that reports on what it would do, but does not perform any action.",
 )
 def destroy(
     repository_url: str,
