@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--name", 
     required=True, 
-    help="Name of the service to  be created."
+    help="(Required) Name of the service to  be created."
 )
 @click.option(
     "--description",
@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--visibility",
     default="private",
-    help="The visibility of the repository. Can be one of: public, private ",
+    help="The visibility of the repository. Can be one of: public, private.",
 )
 @click.option(
     "--main-branch",
@@ -61,13 +61,13 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--init-branch",
     default=INIT_BRANCH,
-    help="The name of the main branch.",
+    help="The name of the initial branch to create on the repository for a PR.",
 )
 @click.option(
     "--in-file",
     required=True,
     type=click.File('r'),
-    help="temp data json to create the service from before wizard is finished",
+    help="(Required) Inputs to be used with the skeleton during creation.",
 )
 @click.option(
     "--dry-run",
