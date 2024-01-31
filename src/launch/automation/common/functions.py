@@ -10,7 +10,12 @@ from git.repo import Repo
 logger = logging.getLogger(__name__)
 
 ## GIT Specific Functions
-def git_clone(skip_git, target_dir, clone_url: string) -> Repo:
+def git_clone(
+    skip_git: str, 
+    target_dir: str, 
+    clone_url: str
+    ) -> Repo:
+
     if not skip_git:
         try:
             logger.info(f"Cloning repository: {clone_url} into {target_dir}")
@@ -32,7 +37,12 @@ def git_clone(skip_git, target_dir, clone_url: string) -> Repo:
         return repository
 
 
-def git_checkout(skip_git, repository: Repo, branch=None, new_branch=False) -> None:
+def git_checkout(
+    skip_git, repository: Repo, 
+    branch=None, 
+    new_branch=False
+    ) -> None:
+
     if skip_git:
         return None
     if branch:
@@ -90,7 +100,11 @@ def check_git_changes(
             return True
 
 
-def read_key_value_from_file(file, key) -> string:
+def read_key_value_from_file(
+    file: str, 
+    key: str
+    ) -> string:
+
     try:
         with open(file) as blob:
             data = json.load(blob)
@@ -104,7 +118,7 @@ def read_key_value_from_file(file, key) -> string:
         raise FileNotFoundError(f"File not found: {file}")
 
 
-def install_tool_versions(file) -> None:
+def install_tool_versions(file: str) -> None:
     logger.info('Installing all asdf plugins under .tool-versions')
     try:
         with open(file, 'r') as file:
@@ -119,7 +133,12 @@ def install_tool_versions(file) -> None:
         raise RuntimeError(f"An error occurred with asdf install {file}: {str(e)}") from e
 
 
-def set_netrc(password, machine, login) -> None:
+def set_netrc(
+    password: str, 
+    machine:str , 
+    login:str
+    ) -> None:
+
     logger.info('Setting ~/.netrc variables')
     try:
         with open(os.path.expanduser('~/.netrc'), 'a') as file:
@@ -130,3 +149,9 @@ def set_netrc(password, machine, login) -> None:
         os.chmod(os.path.expanduser('~/.netrc'), 0o600)
     except Exception as e:
         raise RuntimeError(f"An error occurred: {str(e)}")
+
+def deploy_remote_state(
+    provider_config: dict
+    ) -> None:
+
+    subprocess.run(['make', 'terragrunt/remote_state/azure'], check=True)

@@ -5,7 +5,12 @@ from launch.automation.common.functions import read_key_value_from_file
 
 logger = logging.getLogger(__name__)
 
-def assume_role(provider_config, repository_name, target_environment):
+def assume_role(
+    provider_config: dict, 
+    repository_name: str, 
+    target_environment: str
+    ) -> None:
+
     logger.info("Assuming the IAM deployment role")
 
     profile = read_key_value_from_file(f"{repository_name}/accounts.json", target_environment)

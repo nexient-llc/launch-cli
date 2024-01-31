@@ -226,6 +226,11 @@ def apply(
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
+    "--provider",
+    Required=True,
+    help="(Required) Provider to use.",
+)
+@click.option(
     "--provider-config",
     default=None,
     help="Provider config is used for any specific config needed for certain providers. For example, AWS needs additional parameters to assume a deployment role. e.x {'provider':'aws','aws':{'role_to_assume':'arn:aws:iam::012345678912:role/myRole','region':'us-east-2'}}",
@@ -272,6 +277,7 @@ def destroy(
     git_token: str,
     commit_sha: str,
     target_environment: str,
+    provider: str,
     provider_config: dict,
     skip_git: bool,
     is_infrastructure: bool,
@@ -291,6 +297,7 @@ def destroy(
         git_token=git_token,
         commit_sha=commit_sha,
         target_environment=target_environment,
+        provider=provider,
         provider_config=provider_config,
         skip_git=skip_git,
         is_infrastructure=is_infrastructure,

@@ -3,7 +3,7 @@ import os
 import subprocess
 import os
 from launch.automation.provider.aws.functions import assume_role
-from launch.automation.common.functions import set_netrc, install_tool_versions, git_clone, git_checkout, check_git_changes
+from launch.automation.common.functions import set_netrc, install_tool_versions, git_clone, git_checkout, check_git_changes, deploy_remote_state
 
 
 logger = logging.getLogger(__name__)
@@ -83,6 +83,7 @@ def prepare_for_terragrunt(
         git_token,
         commit_sha,
         target_environment,
+        provider,
         provider_config,
         skip_git,
         is_infrastructure,
@@ -148,3 +149,18 @@ def prepare_for_terragrunt(
         exec_dir = f"{override['environment_dir']}/{target_environment}"
 
     os.chdir(exec_dir)
+
+    # If the Provider is AZURE there is a prequisite requirement of logging into azure
+    # i.e. az login, or service principal is already applied to the environment. 
+    # If the provider is AWS, we need to assume the role for deployment. 
+    if provider_config:
+        if provider_config.provider == 'aws':
+            assume_role(
+                provider_config=provider_config, 
+                repository_name=repository_name, 
+                target_environment=target_environment
+            )
+        if provider_config.provider == 'az':
+            deploy_remote_state(
+                provider_config=provider_config, 
+            )
