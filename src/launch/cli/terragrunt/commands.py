@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get('TARGETENV', 'sandbox'),
+    default=os.environ.get('TARGETENV', 'dev'),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
