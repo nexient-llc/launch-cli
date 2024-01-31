@@ -83,7 +83,6 @@ def prepare_for_terragrunt(
         git_token,
         commit_sha,
         target_environment,
-        provider,
         provider_config,
         skip_git,
         is_infrastructure,

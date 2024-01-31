@@ -227,7 +227,7 @@ def apply(
 )
 @click.option(
     "--provider",
-    Required=True,
+    required=True,
     help="(Required) Provider to use.",
 )
 @click.option(
