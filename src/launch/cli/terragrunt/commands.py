@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import click
@@ -76,7 +77,7 @@ def plan(
     git_token: str,
     commit_sha: str,
     target_environment: str,
-    provider_config: dict,
+    provider_config: str,
     skip_git: bool,
     is_infrastructure: bool,
     path: str,
@@ -95,7 +96,7 @@ def plan(
         git_token=git_token,
         commit_sha=commit_sha,
         target_environment=target_environment,
-        provider_config=provider_config,
+        provider_config=json.loads(provider_config),
         skip_git=skip_git,
         is_infrastructure=is_infrastructure,
         path=path,
@@ -130,7 +131,7 @@ def plan(
 @click.option(
     "--provider-config",
     default=None,
-    help="Provider config is used for any specific config needed for certain providers. For example, AWS needs additional parameters to assume a deployment role. e.x {'provider':'aws','aws':{'role_to_assume':'arn:aws:iam::012345678912:role/myRole','region':'us-east-2'}}",
+    help="Provider config as a string used for any specific config needed for certain providers. For example, AWS needs additional parameters to assume a deployment role. e.x {'provider':'aws','aws':{'role_to_assume':'arn:aws:iam::012345678912:role/myRole','region':'us-east-2'}}",
 )
 @click.option(
     "--skip-git",
@@ -278,7 +279,7 @@ def destroy(
     commit_sha: str,
     target_environment: str,
     provider: str,
-    provider_config: dict,
+    provider_config: str,
     skip_git: bool,
     is_infrastructure: bool,
     path: str,

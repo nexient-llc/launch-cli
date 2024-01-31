@@ -16,7 +16,7 @@ def assume_role(
     profile = read_key_value_from_file(f"{repository_name}/accounts.json", target_environment)
 
     try:
-        sts_credentials = json.loads(subprocess.check_output(["aws", "sts", "assume-role", "--role-arn", provider_config.aws.role_arn, "--role-session-name", "caf-build-agent"]))
+        sts_credentials = json.loads(subprocess.check_output(["aws", "sts", "assume-role", "--role-arn", provider_config['aws']['role_arn'], "--role-session-name", "caf-build-agent"]))
     except Exception as e:
         raise RuntimeError(f"Failed aws sts assume-role: {str(e)}") from e
 
@@ -28,6 +28,6 @@ def assume_role(
         subprocess.run(["aws", "configure", "set", f"profile.{profile}.aws_access_key_id", access_key])
         subprocess.run(["aws", "configure", "set", f"profile.{profile}.aws_secret_access_key", secret_access_key])
         subprocess.run(["aws", "configure", "set", f"profile.{profile}.aws_session_token", session_token])
-        subprocess.run(["aws", "configure", "set", f"profile.{profile}.region", provider_config.aws.region])
+        subprocess.run(["aws", "configure", "set", f"profile.{profile}.region", provider_config['aws']['region']])
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed set aws configure: {str(e)}")
