@@ -119,7 +119,7 @@ def create(
     # Since we copied the skeleton repo, we need to update the origin
     skeleton_repo.delete_remote('origin')
     origin = skeleton_repo.create_remote('origin', service_repo.clone_url)
-    origin.push(refspec='{}:{}'.format(skeleton_branch, main_branch))
+    origin.push(refspec=f"{skeleton_branch}:{main_branch}")
     context.invoke(set_default, organization=organization, repository_name=name, dry_run=dry_run)
 
     # PyGithub doesn't have good support with interacting with local repos
