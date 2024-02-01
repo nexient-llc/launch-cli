@@ -1,30 +1,27 @@
 import logging
-import os
 import re
 import shutil
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 def create_dirs_and_copy_files(base_path, nested_dict, props_path_key='properties_file', props_file_name='terraform.tfvars'):
     for key, value in nested_dict.items():
         if key == props_path_key and isinstance(value, str):
-            destination = os.path.join(base_path, props_file_name)
-            if os.path.exists(value):
+            destination = Path(base_path) / props_file_name
+            if Path(value).exists():
                 shutil.copy(value, destination)
                 logger.info(f"Copied {value} to {destination}")
             else:
                 raise Exception(f"File not found: {value}")
         elif isinstance(value, dict):
-            new_path = os.path.join(base_path, key)
-            if not os.path.exists(new_path):
-                os.makedirs(new_path)
+            new_path = Path(base_path) / key
+            if not Path(new_path).exists():
+                Path(new_path).mkdir()
             create_dirs_and_copy_files(new_path, value)
 
 
 def render_template(template_name, output_path, data, env):
-    print(f"{template_name} : {type(template_name)}")
-    print(output_path)
-    print(data)
     template = env.get_template(template_name)
     rendered_content = template.render(data={
         "path": output_path,
@@ -36,12 +33,12 @@ def render_template(template_name, output_path, data, env):
     match = re.search(output_file_pattern, rendered_content)
     if match:
         output_file_name = match.group(1)
-        full_output_path = os.path.join(output_path, output_file_name)
+        full_output_path = Path(output_path) / output_file_name
         content_to_write = re.sub(output_file_pattern, '', rendered_content, count=1).strip()
     else:
         raise RuntimeError(f"No output file name found in template: {template_name}")
 
-    os.makedirs(os.path.dirname(full_output_path), exist_ok=True)
+    Path(Path(full_output_path).parent).mkdir(exist_ok=True)
     with open(full_output_path, 'w') as file:
         file.write(content_to_write)
     logger.info(f"Rendered {template_name} to {full_output_path}")
@@ -56,12 +53,12 @@ def traverse_and_render(base_path, structure, data, env):
             else:
                 render_template(value, base_path, data, env)
         elif "<" in key and ">" in key:
-            for dir_name in os.listdir(base_path):
-                dir_path = os.path.join(base_path, dir_name)
-                if os.path.isdir(dir_path):
+            for dir_name in Path(base_path).iterdir():
+                dir_path = Path(base_path) / dir_name
+                if Path(dir_path).isdir():
                     traverse_and_render(dir_path, value, data, env)
         elif isinstance(value, dict):
-            new_path = os.path.join(base_path, key)
-            os.makedirs(new_path, exist_ok=True)
+            new_path = Path(base_path) / key
+            Path(new_path, exist_ok=True).mkdir(exist_ok=True)
             traverse_and_render(new_path, value, data, env)
 

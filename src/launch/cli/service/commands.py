@@ -2,9 +2,8 @@ import shutil
 import click
 import logging
 import json
-import os
-import re
 import subprocess
+from pathlib import Path
 from typing import IO, Any
 from jinja2 import Environment, FileSystemLoader
 from launch.github.auth import get_github_instance
@@ -12,7 +11,7 @@ from launch.github.repo import create_repository, clone_repository
 from launch.cli.github.access.commands import set_default
 from launch.service.common import create_dirs_and_copy_files, traverse_and_render
 
-from launch import GITHUB_ORG_NAME, SERVICE_SKELETON, MAIN_BRANCH, INIT_BRANCH
+from launch import GITHUB_ORG_NAME, SERVICE_SKELETON, SKELETON_BRANCH, MAIN_BRANCH, INIT_BRANCH
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--skeleton-branch",
-    default=SERVICE_SKELETON,
+    default=SKELETON_BRANCH,
     help="The branch or tag to use from the skeleton repository.",
 )
 @click.option(
@@ -97,7 +96,7 @@ def create(
             "Performing a dry run, nothing will be created", fg="yellow"
         )
         
-    service_path =f"{os.getcwd()}/{name}"
+    service_path =f"{Path.cwd()}/{name}"
     
     g = get_github_instance()
     
@@ -133,6 +132,7 @@ def create(
     )
 
     # Jinja2 creation
+    # TODO: Convert to pathlib
     with open(f"{service_path}/.launch/jinja2/file_structure.json", 'r') as file:
         j2_file_structure = json.load(file)
 
@@ -148,6 +148,11 @@ def create(
 
     # Remove the .launch directory
     shutil.rmtree(f"{service_path}/.launch")
+
+    # Append .gitignore with '.launch'
+    # TODO: Convert to pathlib
+    with open(f"{service_path}/.gitignore", "a") as file:
+        file.write("# launch-cli tool\n.launch/\n")
 
     # PyGithub doesn't have good support with interacting with local repos
     subprocess.run(["git", "add", "."], cwd=service_path)
