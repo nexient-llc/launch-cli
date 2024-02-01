@@ -12,7 +12,7 @@ from launch.github.repo import create_repository, clone_repository
 from launch.cli.github.access.commands import set_default
 from launch.service.common import create_dirs_and_copy_files, traverse_and_render
 
-from launch import GITHUB_ORG_NAME, SERVICE_SKELETON, MAIN_BRANCH, INIT_BRANCH
+from launch import GITHUB_ORG_NAME, SERVICE_SKELETON, SKELETON_BRANCH, MAIN_BRANCH, INIT_BRANCH
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--skeleton-branch",
-    default=SERVICE_SKELETON,
+    default=SKELETON_BRANCH,
     help="The branch or tag to use from the skeleton repository.",
 )
 @click.option(
