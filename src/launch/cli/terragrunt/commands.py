@@ -1,11 +1,9 @@
 import json
 import logging
 import os
+from pathlib import Path
 import click
-
 from launch.automation.terragrunt.functions import *
-import os
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +47,8 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--path",
-    default=os.path.expanduser("~"),
-    help="Working directory path. Defaults to home (~).",
+    default=Path.cwd(),
+    help="Working directory path. Defaults to current directory.",
 )
 @click.option(
     "--override",
@@ -125,7 +123,7 @@ def plan(
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get('TARGETENV', 'sandbox'),
+    default=os.environ.get('TARGETENV', 'dev'),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
@@ -147,8 +145,8 @@ def plan(
 )
 @click.option(
     "--path",
-    default=os.path.expanduser("~"),
-    help="Working directory path. Defaults to home (~).",
+    default=Path.cwd(),
+    help="Working directory path. Defaults to current directory.",
 )
 @click.option(
     "--override",
@@ -223,7 +221,7 @@ def apply(
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get('TARGETENV', 'sandbox'),
+    default=os.environ.get('TARGETENV', 'dev'),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
@@ -250,8 +248,8 @@ def apply(
 )
 @click.option(
     "--path",
-    default=os.path.expanduser("~"),
-    help="Working directory path. Defaults to home (~).",
+    default=Path.cwd(),
+    help="Working directory path. Defaults to current directory.",
 )
 @click.option(
     "--override",
