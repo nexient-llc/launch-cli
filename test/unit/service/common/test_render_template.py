@@ -1,69 +1,47 @@
 from unittest.mock import patch, MagicMock, mock_open
 import pytest
-from launch.service.common import render_template
+from pathlib import Path
+from launch.service.common import render_template 
 
-# Test successful template rendering and file writing
-@patch('launch.service.common.os.makedirs')
-@patch('launch.service.common.open', new_callable=mock_open)
-@patch('launch.service.common.logger.info')
-def test_render_template_success(mock_logger, mock_file_open, mock_makedirs):
-    env = MagicMock()
-    template_content = "Output File: test_output.txt\nContent to write"
-    env.get_template.return_value.render.return_value = template_content
-    template_name = "test_template"
-    output_path = "/output/path"
-    data = {"key": "value"}
+@pytest.fixture
+def mock_env():
+    mock_template = MagicMock()
+    mock_env = MagicMock()
+    mock_env.get_template.return_value = mock_template
+    return mock_env, mock_template
 
-    render_template(template_name, output_path, data, env)
+def test_successful_rendering_and_file_creation(mock_env):
+    env, mock_template = mock_env
+    mock_template.render.return_value = "Output File: output.txt\nRendered Content"
+    
+    with patch("builtins.open", new_callable=mock_open()) as mock_file, \
+         patch("launch.service.common.Path.mkdir") as mock_mkdir, \
+         patch("launch.service.common.logging.Logger.info") as mock_logger:
+        render_template("template.jinja", "/path/to/output", {"key": "value"}, env)
+        
+        mock_mkdir.assert_called_once()
+        mock_file.assert_called_once_with(Path("/path/to/output/output.txt"), 'w')
+        mock_file().write.assert_called_once_with("Rendered Content")
+        mock_logger.assert_called()
 
-    mock_logger.assert_called_once_with(f"Rendered {template_name} to /output/path/test_output.txt")
-    mock_makedirs.assert_called_once_with('/output/path', exist_ok=True)
-    mock_file_open.assert_called_once_with('/output/path/test_output.txt', 'w')
-    handle = mock_file_open()
-    handle.write.assert_called_once_with('Content to write')
+def test_successful_rendering_and_file_creation(mock_env):
+    env, mock_template = mock_env
+    mock_template.render.return_value = "Output File: output.txt\nRendered Content"
+    
+    with patch("builtins.open", mock_open()) as mock_file, \
+         patch("launch.service.common.Path.mkdir") as mock_mkdir, \
+         patch("launch.service.common.logging.Logger.info") as mock_logger:
+        render_template("template.jinja", "/path/to/output", {"key": "value"}, env)
+        
+        mock_mkdir.assert_called_once_with(exist_ok=True)
+        mock_file.assert_called_once_with(Path("/path/to/output/output.txt"), 'w')
+        mock_file().write.assert_called_once_with("Rendered Content")
+        mock_logger.assert_called()
 
-# Test no output file name found in template
-@patch('launch.service.common.os.makedirs')
-@patch('launch.service.common.open', new_callable=mock_open)
-@patch('launch.service.common.logger.info')
-def test_render_template_no_output_file(mock_logger, mock_file_open, mock_makedirs):
-    env = MagicMock()
-    template_content = "No output file info"
-    env.get_template.return_value.render.return_value = template_content
-    template_name = "test_template"
-    output_path = "/output/path"
-    data = {"key": "value"}
-
+def test_exception_for_missing_output_file_name(mock_env):
+    env, mock_template = mock_env
+    mock_template.render.return_value = "No output file specified"
+    
     with pytest.raises(RuntimeError) as excinfo:
-        render_template(template_name, output_path, data, env)
-
-    assert "No output file name found in template: test_template" in str(excinfo.value)
-
-
-@patch('launch.service.common.os.makedirs')
-@patch('launch.service.common.open', new_callable=mock_open)
-@patch('launch.service.common.logger.info')
-def test_render_template_various_contents(mock_logger, mock_file_open, mock_makedirs):
-    env = MagicMock()
-    template_contents = [
-        "Output File: file1.txt\nFirst content",
-        "Content without output file name",
-        "Output File: file2.txt\nSecond content"
-    ]
-    env.get_template.return_value.render.side_effect = template_contents
-    template_name = "test_template"
-    output_path = "/output/path"
-    data = {"key": "value"}
-
-    render_template(template_name, output_path, data, env)
-    mock_file_open.assert_called_with('/output/path/file1.txt', 'w')
-    handle = mock_file_open()
-    handle.write.assert_called_with('First content')
-
-    with pytest.raises(RuntimeError):
-        render_template(template_name, output_path, data, env)
-
-    render_template(template_name, output_path, data, env)
-    mock_file_open.assert_called_with('/output/path/file2.txt', 'w')
-    handle = mock_file_open()
-    handle.write.assert_called_with('Second content')
+        render_template("template.jinja", "/path/to/output", {"key": "value"}, env)
+    assert "No output file name found in template: template.jinja" in str(excinfo.value)

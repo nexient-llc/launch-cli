@@ -55,10 +55,15 @@ def traverse_and_render(base_path, structure, data, env):
         elif "<" in key and ">" in key:
             for dir_name in Path(base_path).iterdir():
                 dir_path = Path(base_path) / dir_name
-                if Path(dir_path).isdir():
+                if Path(dir_path).is_dir():
                     traverse_and_render(dir_path, value, data, env)
         elif isinstance(value, dict):
             new_path = Path(base_path) / key
             Path(new_path, exist_ok=True).mkdir(exist_ok=True)
             traverse_and_render(new_path, value, data, env)
 
+
+def get_last_dir(path):
+    if isinstance(path, Path):
+        parts = path.parts
+        return parts[-2] if len(parts) > 1 else None

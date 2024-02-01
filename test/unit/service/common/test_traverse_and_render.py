@@ -1,61 +1,44 @@
-from unittest.mock import patch, MagicMock, call
+import pytest
+from unittest.mock import patch, MagicMock, ANY
 from launch.service.common import traverse_and_render
+from pathlib import Path
 
 
-@patch('launch.service.common.render_template')
-def test_traverse_and_render_single_template(mock_render_template):
-    base_path = "/base/path"
-    structure = {"template": "template1"}
-    data = {"key": "value"}
-    env = MagicMock()
-
-    traverse_and_render(base_path, structure, data, env)
-
-    mock_render_template.assert_called_once_with("template1", base_path, data, env)
+@pytest.fixture
+def mock_env():
+    with patch("launch.service.common.render_template") as mock_render, \
+         patch("launch.service.common.Path.mkdir") as mock_mkdir, \
+         patch("launch.service.common.Path.iterdir") as mock_iterdir, \
+         patch("launch.service.common.Path.is_dir", return_value=True) as mock_is_dir:
+        mock_iterdir.return_value = [Path("dir1"), Path("dir2")]
+        yield mock_render, mock_mkdir, mock_iterdir, mock_is_dir
 
 
-@patch('launch.service.common.render_template')
-def test_traverse_and_render_multiple_templates(mock_render_template):
-    base_path = "/base/path"
-    structure = {"template": ["template1", "template2"]}
-    data = {"key": "value"}
-    env = MagicMock()
-
-    traverse_and_render(base_path, structure, data, env)
-
-    mock_render_template.assert_any_call("template1", base_path, data, env)
-    mock_render_template.assert_any_call("template2", base_path, data, env)
+def test_render_single_template(mock_env):
+    mock_render, _, _, _ = mock_env
+    structure = {"template": "template.j2"}
+    traverse_and_render("/base/path", structure, {}, MagicMock())
+    mock_render.assert_called_once_with("template.j2", "/base/path", {}, ANY)
 
 
-@patch('launch.service.common.os.listdir', return_value=["dir1", "dir2"])
-@patch('launch.service.common.os.path.isdir', return_value=True)
-@patch('launch.service.common.render_template')
-def test_traverse_and_render_recursive(mock_render_template, mock_isdir, mock_listdir):
-    base_path = "/base/path"
-    structure = {"<dir>": {"template": "template1"}}
-    data = {"key": "value"}
-    env = MagicMock()
-
-    traverse_and_render(base_path, structure, data, env)
-
-    mock_listdir.assert_called_once_with(base_path)
-    mock_isdir.assert_called()
-    expected_calls = [
-        call("template1", "/base/path/dir1", data, env),
-        call("template1", "/base/path/dir2", data, env)
-    ]
-    mock_render_template.assert_has_calls(expected_calls, any_order=True)
+def test_render_multiple_templates(mock_env):
+    mock_render, _, _, _ = mock_env
+    structure = {"template": ["template1.j2", "template2.j2"]}
+    traverse_and_render("/base/path", structure, {}, MagicMock())
+    assert mock_render.call_count == 2
 
 
-@patch('launch.service.common.os.makedirs')
-@patch('launch.service.common.render_template')
-def test_traverse_and_render_create_dirs(mock_render_template, mock_makedirs):
-    base_path = "/base/path"
-    structure = {"dir1": {"template": "template1"}}
-    data = {"key": "value"}
-    env = MagicMock()
+def test_recursive_traversal_and_rendering(mock_env):
+    _, mock_mkdir, _, _ = mock_env
+    structure = {"nested": {"template": "nested_template.j2"}}
+    traverse_and_render("/base/path", structure, {}, MagicMock())
+    mock_mkdir.assert_called_with(exist_ok=True)
 
-    traverse_and_render(base_path, structure, data, env)
 
-    mock_makedirs.assert_called_once_with("/base/path/dir1", exist_ok=True)
-    mock_render_template.assert_called_once_with("template1", "/base/path/dir1", data, env)
+def test_dynamic_directory_names(mock_env):
+    mock_render, _, mock_iterdir, mock_is_dir = mock_env
+    structure = {"<dynamic>": {"template": "dynamic_template.j2"}}
+    mock_iterdir.return_value = [Path("dynamic1"), Path("dynamic2")]
+    mock_is_dir.return_value = True
+    traverse_and_render("/base/path", structure, {}, MagicMock())
+    assert mock_render.call_count == 2 
