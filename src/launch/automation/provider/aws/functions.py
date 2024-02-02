@@ -13,7 +13,7 @@ def assume_role(
 
     logger.info("Assuming the IAM deployment role")
 
-    profile = read_key_value_from_file(f"{repository_name}/accounts.json", target_environment)
+    profile = provider_config['aws']['role_arn']
 
     try:
         sts_credentials = json.loads(subprocess.check_output(["aws", "sts", "assume-role", "--role-arn", provider_config['aws']['role_arn'], "--role-session-name", "caf-build-agent"]))

@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--provider-config",
     default=None,
-    help="Provider config is used for any specific config needed for certain providers. For example, AWS needs additional parameters to assume a deployment role. e.x {'provider':'aws','aws':{'role_to_assume':'arn:aws:iam::012345678912:role/myRole','region':'us-east-2'}}",
+    help="Provider config is used for any specific config needed for certain providers. For example, AWS needs additional parameters to assume a deployment role. e.x {'provider':'aws','aws':{'role_arn':'arn:aws:iam::012345678912:role/myRole','region':'us-east-2'}}",
 )
 @click.option(
     "--skip-git",
