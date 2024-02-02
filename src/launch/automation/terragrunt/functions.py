@@ -85,6 +85,7 @@ def prepare_for_terragrunt(
         target_environment: str,
         provider_config: dict,
         skip_git: bool,
+        skip_diff: bool,
         is_infrastructure: bool,
         path: str,
         override: dict
@@ -140,16 +141,24 @@ def prepare_for_terragrunt(
         main_branch=override['main_branch'], 
         directory=override['infrastructure_dir']
     )
-    if git_diff & is_infrastructure:
-        if provider_config.provider == 'aws':
+    
+    if skip_diff:
+        if is_infrastructure:
             exec_dir = f"{override['infrastructure_dir']}"
         else:
-            raise RuntimeError(f"Provider: {provider_config.provider}, is_infrastructure: {is_infrastructure}, and running terragrunt on infrastructure directory: {override['infrastructure_dir']} is not supported")
-    elif not git_diff and  is_infrastructure:
-        raise RuntimeError(f"No {override['infrastructure_dir']} folder, however, is_infrastructure: {is_infrastructure}")
-    elif git_diff and not is_infrastructure:
-        raise RuntimeError(f"Changes found in {override['infrastructure_dir']} folder, however, is_infrastructure: {is_infrastructure}")
+            exec_dir = f"{override['environment_dir']}/{target_environment}"
     else:
-        exec_dir = f"{override['environment_dir']}/{target_environment}"
+        if git_diff & is_infrastructure:
+            if provider_config.provider == 'aws':
+                exec_dir = f"{override['infrastructure_dir']}"
+            else:
+                raise RuntimeError(f"Provider: {provider_config.provider}, is_infrastructure: {is_infrastructure}, and running terragrunt on infrastructure directory: {override['infrastructure_dir']} is not supported")
+        elif not git_diff and  is_infrastructure:
+            raise RuntimeError(f"No {override['infrastructure_dir']} folder, however, is_infrastructure: {is_infrastructure}")
+        elif git_diff and not is_infrastructure:
+            raise RuntimeError(f"Changes found in {override['infrastructure_dir']} folder, however, is_infrastructure: {is_infrastructure}")
+        else:
+            exec_dir = f"{override['environment_dir']}/{target_environment}"
+
 
     os.chdir(exec_dir)

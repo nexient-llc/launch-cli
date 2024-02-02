@@ -43,6 +43,12 @@ logger = logging.getLogger(__name__)
     help="If set, it will ignore cloning and checking out the git repository and it's properties.",
 )
 @click.option(
+    "--skip-diff",
+    is_flag=True,
+    default=False,
+    help="If set, it will ignore checking the diff between the pipeline and service changes.",
+)
+@click.option(
     "--is-infrastructure",
     is_flag=True,
     default=False,
@@ -80,6 +86,7 @@ def plan(
     target_environment: str,
     provider_config: str,
     skip_git: bool,
+    skip_diff: bool,
     is_infrastructure: bool,
     path: str,
     override: dict,
@@ -99,6 +106,7 @@ def plan(
         target_environment=target_environment,
         provider_config=json.loads(provider_config),
         skip_git=skip_git,
+        skip_diff=skip_diff,
         is_infrastructure=is_infrastructure,
         path=path,
         override=override
@@ -116,7 +124,7 @@ def plan(
     )
 @click.option(
     "--git-token",
-    default=os.environ.get('GIT_TOKEN', None),
+    default=os.environ.get('GITHUB_TOKEN', None),
     required=True,
     help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
@@ -126,7 +134,7 @@ def plan(
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get('TARGETENV', 'sandbox'),
+    default=os.environ.get('TARGETENV', 'dev'),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
@@ -139,6 +147,12 @@ def plan(
     is_flag=True,
     default=False,
     help="If set, it will ignore cloning and checking out the git repository and it's properties.",
+)
+@click.option(
+    "--skip-diff",
+    is_flag=True,
+    default=False,
+    help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
     "--is-infrastructure",
@@ -178,6 +192,7 @@ def apply(
     target_environment: str,
     provider_config: dict,
     skip_git: bool,
+    skip_diff: bool,
     is_infrastructure: bool,
     path: str,
     override: dict,
@@ -197,6 +212,7 @@ def apply(
         target_environment=target_environment,
         provider_config=provider_config,
         skip_git=skip_git,
+        skip_diff=skip_diff,
         is_infrastructure=is_infrastructure,
         path=path,
         override=override
@@ -214,7 +230,7 @@ def apply(
     )
 @click.option(
     "--git-token",
-    default=os.environ.get('GIT_TOKEN', None),
+    default=os.environ.get('GITHUB_TOKEN', None),
     required=True,
     help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
@@ -224,7 +240,7 @@ def apply(
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get('TARGETENV', 'sandbox'),
+    default=os.environ.get('TARGETENV', 'dev'),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
@@ -242,6 +258,12 @@ def apply(
     is_flag=True,
     default=False,
     help="If set, it will ignore cloning and checking out the git repository and it's properties.",
+)
+@click.option(
+    "--skip-diff",
+    is_flag=True,
+    default=False,
+    help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
     "--is-infrastructure",
@@ -282,6 +304,7 @@ def destroy(
     provider: str,
     provider_config: str,
     skip_git: bool,
+    skip_diff: bool,
     is_infrastructure: bool,
     path: str,
     override: dict,
@@ -302,6 +325,7 @@ def destroy(
         provider=provider,
         provider_config=provider_config,
         skip_git=skip_git,
+        skip_diff=skip_diff,
         is_infrastructure=is_infrastructure,
         path=path,
         override=override
