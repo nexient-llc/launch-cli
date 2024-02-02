@@ -12,11 +12,7 @@ from launch.github.repo import create_repository, clone_repository
 from launch.cli.github.access.commands import set_default
 from launch.service.common import create_dirs_and_copy_files, traverse_and_render
 
-<<<<<<< HEAD
-from launch import GITHUB_ORG_NAME, SERVICE_SKELETON, MAIN_BRANCH, INIT_BRANCH
-=======
 from launch import GITHUB_ORG_NAME, SERVICE_SKELETON, SKELETON_BRANCH, MAIN_BRANCH, INIT_BRANCH
->>>>>>> 65c181d8c952c9193f50a690d51cc6602f9f7a7a
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +39,7 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--skeleton-branch",
-<<<<<<< HEAD
-    default=SERVICE_SKELETON,
-=======
     default=SKELETON_BRANCH,
->>>>>>> 65c181d8c952c9193f50a690d51cc6602f9f7a7a
     help="The branch or tag to use from the skeleton repository.",
 )
 @click.option(
@@ -127,11 +119,7 @@ def create(
     # Since we copied the skeleton repo, we need to update the origin
     skeleton_repo.delete_remote('origin')
     origin = skeleton_repo.create_remote('origin', service_repo.clone_url)
-<<<<<<< HEAD
-    origin.push(refspec='{}:{}'.format(skeleton_branch, main_branch))
-=======
     origin.push(refspec=f"{skeleton_branch}:{main_branch}")
->>>>>>> 65c181d8c952c9193f50a690d51cc6602f9f7a7a
     context.invoke(set_default, organization=organization, repository_name=name, dry_run=dry_run)
 
     # PyGithub doesn't have good support with interacting with local repos
@@ -144,6 +132,7 @@ def create(
         nested_dict=service_config['platform']
     )
 
+    # TODO: Convert to pathlib
     # Jinja2 creation
     with open(f"{service_path}/.launch/jinja2/file_structure.json", 'r') as file:
         j2_file_structure = json.load(file)
@@ -160,6 +149,9 @@ def create(
 
     # Remove the .launch directory
     shutil.rmtree(f"{service_path}/.launch")
+    # TODO: Convert to pathlib
+    with open(f"{service_path}/.gitignore", "a") as file:
+        file.write("# launch-cli tool\n.launch/\n")
 
     # PyGithub doesn't have good support with interacting with local repos
     subprocess.run(["git", "add", "."], cwd=service_path)

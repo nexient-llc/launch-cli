@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from pathlib import Path
 import click
 
 from launch.automation.terragrunt.functions import *
@@ -49,7 +50,7 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--path",
-    default=os.path.expanduser("~"),
+    default=Path.cwd(),
     help="Working directory path. Defaults to home (~).",
 )
 @click.option(
@@ -147,7 +148,7 @@ def plan(
 )
 @click.option(
     "--path",
-    default=os.path.expanduser("~"),
+    default=Path.cwd(),
     help="Working directory path. Defaults to home (~).",
 )
 @click.option(
@@ -250,7 +251,7 @@ def apply(
 )
 @click.option(
     "--path",
-    default=os.path.expanduser("~"),
+    default=Path.cwd(),
     help="Working directory path. Defaults to home (~).",
 )
 @click.option(
