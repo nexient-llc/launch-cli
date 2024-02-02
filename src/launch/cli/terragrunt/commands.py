@@ -210,7 +210,7 @@ def apply(
         git_token=git_token,
         commit_sha=commit_sha,
         target_environment=target_environment,
-        provider_config=provider_config,
+        provider_config=json.loads(provider_config),
         skip_git=skip_git,
         skip_diff=skip_diff,
         is_infrastructure=is_infrastructure,
@@ -242,11 +242,6 @@ def apply(
     "--target-environment",
     default=os.environ.get('TARGETENV', 'dev'),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
-)
-@click.option(
-    "--provider",
-    required=True,
-    help="(Required) Provider to use.",
 )
 @click.option(
     "--provider-config",
@@ -301,7 +296,6 @@ def destroy(
     git_token: str,
     commit_sha: str,
     target_environment: str,
-    provider: str,
     provider_config: str,
     skip_git: bool,
     skip_diff: bool,
@@ -322,8 +316,7 @@ def destroy(
         git_token=git_token,
         commit_sha=commit_sha,
         target_environment=target_environment,
-        provider=provider,
-        provider_config=provider_config,
+        provider_config=json.loads(provider_config),
         skip_git=skip_git,
         skip_diff=skip_diff,
         is_infrastructure=is_infrastructure,
