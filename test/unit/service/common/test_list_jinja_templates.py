@@ -14,7 +14,6 @@ def create_temp_jinja_file(directory: Path, sub_path: str, content: str = ""):
 def setup_jinja_templates():
     with tempfile.TemporaryDirectory() as temp_dir:
         base_dir = Path(temp_dir)
-        # Create some Jinja templates with placeholders
         create_temp_jinja_file(base_dir, "templates/service/config.j2", "{{ config }}")
         create_temp_jinja_file(base_dir, "templates/service/{{ environment }}/database.j2", "{{ database }}")
         yield base_dir

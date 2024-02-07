@@ -5,11 +5,6 @@ import os
 from pathlib import Path
 from launch.service.common import create_directories
 
-@pytest.fixture
-def fakedata():
-    config_path = Path(__file__).parent / ".." / ".."/ "data" / "fakedata.json"
-    with config_path.open() as f:
-        return json.load(f)
 
 def test_create_nested_directories(fakedata):
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -35,6 +30,6 @@ def test_empty_platform_data():
 def test_non_dict_platform_data():
     with tempfile.TemporaryDirectory() as temp_dir:
         base_path = temp_dir
-        platform_data = []  # Example of non-dict data
+        platform_data = []
         create_directories(base_path, platform_data)
         assert len(list(Path(base_path).glob('**'))) == 1

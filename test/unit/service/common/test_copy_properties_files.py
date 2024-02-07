@@ -5,13 +5,6 @@ from pathlib import Path
 from launch.service.common import copy_properties_files
 
 
-@pytest.fixture
-def fakedata():
-    config_path = Path(__file__).parent / ".." / ".."/ "data" / "fakedata.json"
-    with config_path.open() as f:
-        return json.load(f)
-    
-
 def test_copy_properties_files_from_nested_dict(fakedata):
     with tempfile.TemporaryDirectory() as temp_dir:
         base_path = temp_dir

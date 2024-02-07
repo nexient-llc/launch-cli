@@ -1,6 +1,7 @@
 import os
-
+import json
 import pytest
+from pathlib import Path
 from click import testing as click_testing
 from git.repo import Repo
 
@@ -36,3 +37,14 @@ def example_github_repo(tmp_path):
     temp_repo.index.commit("Added test.txt")
     temp_repo.create_tag("0.1.0")
     yield temp_repo
+
+
+@pytest.fixture
+def fakedata():
+    config_path = Path(__file__).parent / "unit" / "data" / "fakedata.json"
+    with config_path.open() as f:
+        return json.load(f)
+
+@pytest.fixture
+def base_path(tmp_path) -> str:
+    return str(tmp_path)

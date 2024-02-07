@@ -4,5 +4,11 @@
             "us-east-2": {}
         }
     },
-    "pipeline": {}
+    "pipeline": {},
+    "copy_and_render": {
+        "base_dir" : "/path/to/base",
+        "template_paths" : ["/path/to/template1.j2", "/path/to/template2.j2"],
+        "modified_paths" : ["/modified/path1/", "/modified/path2/"],
+        "context_data" : {"key": "value"}
+    }
 }

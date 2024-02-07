@@ -1,6 +1,7 @@
 import logging
 import re
 import shutil
+from typing import List
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
@@ -64,12 +65,16 @@ def render_jinja_template(
     template_path: Path,
     destination_dir: str,
     file_name: str,
-    template_data: dict = {}
+    template_data: dict = {
+        'data': None
+    }
     ) -> None:
+    
+    if not template_data.get('data'):
+        template_data['data'] = {}
 
     env = Environment(loader=FileSystemLoader(template_path.parent))
     template = env.get_template(template_path.name)
-
     template_data['data']['path'] = str(destination_dir)
     output = template.render(template_data)
     destination_path = destination_dir / file_name
@@ -85,24 +90,32 @@ def create_specific_path(base_path: Path, path_parts: list) -> list:
     return [specific_path]
 
 
-def expand_wildcards(current_path: Path, remaining_parts: list) -> list:
+def expand_wildcards(
+    current_path: Path,
+    remaining_parts: List[str],
+) -> List[Path]:
+    """Expand wildcard paths."""
     if not remaining_parts:
         return [current_path]
 
     next_part, *next_remaining_parts = remaining_parts
     if next_part == "*":
         if not next_remaining_parts:
-            return [sub_path for sub_path in current_path.iterdir() if sub_path.is_dir()]
+            return list_directories(current_path)
         else:
             all_subdirs = []
-            for sub_path in current_path.iterdir():
-                if sub_path.is_dir():
-                    all_subdirs.extend(expand_wildcards(sub_path, next_remaining_parts))
+            for sub_path in list_directories(current_path):
+                all_subdirs.extend(expand_wildcards(sub_path, next_remaining_parts))
             return all_subdirs
     else:
         next_path = current_path / next_part
         next_path.mkdir(exist_ok=True)
         return expand_wildcards(next_path, next_remaining_parts)
+
+
+def list_directories(directory: Path) -> List[Path]:
+    """List subdirectories in a given directory."""
+    return [sub_path for sub_path in directory.iterdir() if sub_path.is_dir()]
 
 
 def find_dirs_to_render(base_path: str, path_parts: list) -> list:
