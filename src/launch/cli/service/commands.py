@@ -5,12 +5,13 @@ import json
 import os
 import re
 import subprocess
+from pathlib import Path
 from typing import IO, Any
 from jinja2 import Environment, FileSystemLoader
 from launch.github.auth import get_github_instance
 from launch.github.repo import create_repository, clone_repository
 from launch.cli.github.access.commands import set_default
-from launch.service.common import create_dirs_and_copy_files, traverse_and_render
+from launch.service.common import create_directories, copy_properties_files, list_jinja_templates, copy_and_render_templates
 
 from launch import GITHUB_ORG_NAME, SERVICE_SKELETON, SKELETON_BRANCH, MAIN_BRANCH, INIT_BRANCH
 
@@ -98,62 +99,56 @@ def create(
         )
         
     service_path =f"{os.getcwd()}/{name}"
+    input_data = json.load(in_file)
     
-    g = get_github_instance()
+    # g = get_github_instance()
     
-    skeleton_repo = clone_repository(
-        repository_url=skeleton_url,
-        target=name,
-        branch=skeleton_branch
-    )
+    # skeleton_repo = clone_repository(
+    #     repository_url=skeleton_url,
+    #     target=name,
+    #     branch=skeleton_branch
+    # )
 
-    service_repo = create_repository(
-        g=g,
-        organization=organization,
-        name=name,
-        description=description,
-        public=public,
-        visibility=visibility,
-    )
+    # service_repo = create_repository(
+    #     g=g,
+    #     organization=organization,
+    #     name=name,
+    #     description=description,
+    #     public=public,
+    #     visibility=visibility,
+    # )
     
-    # Since we copied the skeleton repo, we need to update the origin
-    skeleton_repo.delete_remote('origin')
-    origin = skeleton_repo.create_remote('origin', service_repo.clone_url)
-    origin.push(refspec=f"{skeleton_branch}:{main_branch}")
-    context.invoke(set_default, organization=organization, repository_name=name, dry_run=dry_run)
+    # # Since we copied the skeleton repo, we need to update the origin
+    # skeleton_repo.delete_remote('origin')
+    # origin = skeleton_repo.create_remote('origin', service_repo.clone_url)
+    # origin.push(refspec=f"{skeleton_branch}:{main_branch}")
+    # context.invoke(set_default, organization=organization, repository_name=name, dry_run=dry_run)
 
-    # PyGithub doesn't have good support with interacting with local repos
-    subprocess.run(["git", "pull", "origin", main_branch], cwd=service_path)
-    subprocess.run(["git", "checkout", "-b", init_branch], cwd=service_path)
+    # # PyGithub doesn't have good support with interacting with local repos
+    # subprocess.run(["git", "pull", "origin", main_branch], cwd=service_path)
+    # subprocess.run(["git", "checkout", "-b", init_branch], cwd=service_path)
 
-    service_config = json.load(in_file)
-    create_dirs_and_copy_files(
-        base_path=f"{service_path}/platform", 
-        nested_dict=service_config['platform']
+    # Creating directories and copying properties files
+    create_directories(service_path, input_data['platform'])
+    copy_properties_files(service_path, input_data['platform'])
+
+    # Placing Jinja templates
+    template_paths, jinja_paths = list_jinja_templates(service_path / Path('.launch/jinja2'))
+    copy_and_render_templates(
+        base_dir=service_path, 
+        template_paths=template_paths, 
+        modified_paths=jinja_paths,
+        context_data = { "data": { "config": input_data }}
     )
 
-    # TODO: Convert to pathlib
-    # Jinja2 creation
-    with open(f"{service_path}/.launch/jinja2/file_structure.json", 'r') as file:
-        j2_file_structure = json.load(file)
+    # # Remove the .launch directory
+    # shutil.rmtree(f"{service_path}/.launch")
+    # # Append .launch to .gitignore
+    # # TODO: Convert to pathlib
+    # with open(f"{service_path}/.gitignore", "a") as file:
+    #     file.write("# launch-cli tool\n.launch/\n")
 
-    template_dir = f"{service_path}/.launch/jinja2/{service_config['provider']}/"
-    j2_env = Environment(loader=FileSystemLoader(template_dir))
-
-    traverse_and_render(
-        service_path, 
-        j2_file_structure,
-        service_config,
-        j2_env
-    )
-
-    # Remove the .launch directory
-    shutil.rmtree(f"{service_path}/.launch")
-    # TODO: Convert to pathlib
-    with open(f"{service_path}/.gitignore", "a") as file:
-        file.write("# launch-cli tool\n.launch/\n")
-
-    # PyGithub doesn't have good support with interacting with local repos
-    subprocess.run(["git", "add", "."], cwd=service_path)
-    subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=service_path)
-    subprocess.run(["git", "push", "--set-upstream", "origin", init_branch], cwd=service_path)
+    # # PyGithub doesn't have good support with interacting with local repos
+    # subprocess.run(["git", "add", "."], cwd=service_path)
+    # subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=service_path)
+    # subprocess.run(["git", "push", "--set-upstream", "origin", init_branch], cwd=service_path)

@@ -41,9 +41,9 @@ def terragrunt_plan(file=None, run_all=True):
 def terragrunt_apply(file=None, run_all=True):
     logger.info("Running terragrunt apply")
     if run_all:
-        subprocess_args = ['terragrunt', 'run-all', 'apply', '-auto-approve']
+        subprocess_args = ['terragrunt', 'run-all', 'apply', '-auto-approve', '--terragrunt-non-interactive']
     else:
-        subprocess_args = ['terragrunt', 'apply', '-auto-approve']
+        subprocess_args = ['terragrunt', 'apply', '-auto-approve', '--terragrunt-non-interactive']
 
     if file:
         subprocess_args.append('-var-file')
@@ -57,9 +57,9 @@ def terragrunt_apply(file=None, run_all=True):
 def terragrunt_destroy(file=None, run_all=True):
     logger.info("Running terragrunt destroy")
     if run_all:
-        subprocess_args = ['terragrunt', 'run-all', 'destroy', '-auto-approve']
+        subprocess_args = ['terragrunt', 'run-all', 'destroy', '-auto-approve', '--terragrunt-non-interactive']
     else:
-        subprocess_args = ['terragrunt', 'destroy', '-auto-approve']
+        subprocess_args = ['terragrunt', 'destroy', '-auto-approve', '--terragrunt-non-interactive']
 
     if file:
         subprocess_args.append('-var-file')
