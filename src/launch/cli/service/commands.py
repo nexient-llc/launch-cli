@@ -77,6 +77,8 @@ logger = logging.getLogger(__name__)
     help="Perform a dry run that reports on what it would do, but does not create webhooks.",
 )
 @click.pass_context
+# TODO: Optimize this function and logic
+# Ticket: 1633
 def create(
     context: click.Context,
     organization: str,
