@@ -1,19 +1,22 @@
-from unittest.mock import patch, MagicMock, mock_open
-import pytest
 from pathlib import Path
+from unittest.mock import MagicMock, mock_open, patch
+
+import pytest
+
 from launch.service.common import render_jinja_template
 
-@patch('launch.service.common.Environment')
-@patch('launch.service.common.logger')
-@patch('launch.service.common.open', new_callable=mock_open)
+
+@patch("launch.service.common.Environment")
+@patch("launch.service.common.logger")
+@patch("launch.service.common.open", new_callable=mock_open)
 def test_render_jinja_template(mock_open, mock_logger, mock_Environment):
-    template_path = Path('/path/to/template.j2')
-    destination_dir = Path('/path/to/destination')
-    file_name = 'output.txt'
-    template_data = {'data': {'key': 'value'}}  
-    
+    template_path = Path("/path/to/template.j2")
+    destination_dir = Path("/path/to/destination")
+    file_name = "output.txt"
+    template_data = {"data": {"key": "value"}}
+
     mock_template = MagicMock()
-    mock_template.render.return_value = 'Rendered template content'
+    mock_template.render.return_value = "Rendered template content"
     mock_env_instance = mock_Environment.return_value
     mock_env_instance.get_template.return_value = mock_template
 
@@ -21,26 +24,31 @@ def test_render_jinja_template(mock_open, mock_logger, mock_Environment):
 
     mock_Environment.assert_called_once()
     mock_env_instance.get_template.assert_called_once_with(template_path.name)
-    mock_template.render.assert_called_once_with({'data': {'key': 'value', 'path': str(destination_dir)}})
-    mock_logger.info.assert_called_once_with(f"Rendered template saved to {destination_dir / file_name}")
+    mock_template.render.assert_called_once_with(
+        {"data": {"key": "value", "path": str(destination_dir)}}
+    )
+    mock_logger.info.assert_called_once_with(
+        f"Rendered template saved to {destination_dir / file_name}"
+    )
 
-    mock_open.assert_called_once_with(destination_dir / file_name, 'w')
-    mock_open.return_value.__enter__.return_value.write.assert_called_once_with('Rendered template content')
+    mock_open.assert_called_once_with(destination_dir / file_name, "w")
+    mock_open.return_value.__enter__.return_value.write.assert_called_once_with(
+        "Rendered template content"
+    )
 
 
-
-@patch('launch.service.common.Environment')
-@patch('launch.service.common.logger')
-@patch('launch.service.common.open', new_callable=mock_open)
+@patch("launch.service.common.Environment")
+@patch("launch.service.common.logger")
+@patch("launch.service.common.open", new_callable=mock_open)
 def test_render_jinja_template_empty_data(mock_open, mock_logger, mock_Environment):
     # Mock data
-    template_path = Path('/path/to/template.j2')
-    destination_dir = Path('/path/to/destination')
-    file_name = 'output.txt'
+    template_path = Path("/path/to/template.j2")
+    destination_dir = Path("/path/to/destination")
+    file_name = "output.txt"
     template_data = {}  # Pass an empty dictionary
 
     mock_template = MagicMock()
-    mock_template.render.return_value = 'Rendered template content'
+    mock_template.render.return_value = "Rendered template content"
     mock_env_instance = mock_Environment.return_value
     mock_env_instance.get_template.return_value = mock_template
 
@@ -48,8 +56,14 @@ def test_render_jinja_template_empty_data(mock_open, mock_logger, mock_Environme
 
     mock_Environment.assert_called_once()
     mock_env_instance.get_template.assert_called_once_with(template_path.name)
-    mock_template.render.assert_called_once_with({'data': {'path': str(destination_dir)}}) 
-    mock_logger.info.assert_called_once_with(f"Rendered template saved to {destination_dir / file_name}")
+    mock_template.render.assert_called_once_with(
+        {"data": {"path": str(destination_dir)}}
+    )
+    mock_logger.info.assert_called_once_with(
+        f"Rendered template saved to {destination_dir / file_name}"
+    )
 
-    mock_open.assert_called_once_with(destination_dir / file_name, 'w')
-    mock_open.return_value.__enter__.return_value.write.assert_called_once_with('Rendered template content')
+    mock_open.assert_called_once_with(destination_dir / file_name, "w")
+    mock_open.return_value.__enter__.return_value.write.assert_called_once_with(
+        "Rendered template content"
+    )

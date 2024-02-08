@@ -1,21 +1,34 @@
-import shutil
-import click
-import logging
 import json
+import logging
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import IO, Any
-from jinja2 import Environment, FileSystemLoader
-from launch.github.auth import get_github_instance
-from launch.github.repo import create_repository, clone_repository
-from launch.cli.github.access.commands import set_default
-from launch.service.common import create_directories, copy_properties_files, list_jinja_templates, copy_and_render_templates
 
-from launch import GITHUB_ORG_NAME, SERVICE_SKELETON, SKELETON_BRANCH, MAIN_BRANCH, INIT_BRANCH
+import click
+from jinja2 import Environment, FileSystemLoader
+
+from launch import (
+    GITHUB_ORG_NAME,
+    INIT_BRANCH,
+    MAIN_BRANCH,
+    SERVICE_SKELETON,
+    SKELETON_BRANCH,
+)
+from launch.cli.github.access.commands import set_default
+from launch.github.auth import get_github_instance
+from launch.github.repo import clone_repository, create_repository
+from launch.service.common import (
+    copy_and_render_templates,
+    copy_properties_files,
+    create_directories,
+    list_jinja_templates,
+)
 
 logger = logging.getLogger(__name__)
+
 
 @click.command()
 @click.option(
@@ -24,9 +37,7 @@ logger = logging.getLogger(__name__)
     help="GitHub organization containing your repository. Defaults to the nexient-llc organization.",
 )
 @click.option(
-    "--name", 
-    required=True, 
-    help="(Required) Name of the service to  be created."
+    "--name", required=True, help="(Required) Name of the service to  be created."
 )
 @click.option(
     "--description",
@@ -44,7 +55,7 @@ logger = logging.getLogger(__name__)
     help="The branch or tag to use from the skeleton repository.",
 )
 @click.option(
-    "--public", 
+    "--public",
     is_flag=True,
     default=False,
     help="The visibility of the repository.",
@@ -67,7 +78,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--in-file",
     required=True,
-    type=click.File('r'),
+    type=click.File("r"),
     help="(Required) Inputs to be used with the skeleton during creation.",
 )
 @click.option(
@@ -94,21 +105,17 @@ def create(
     dry_run: bool,
 ):
     """Creates a new service."""
-    
+
     if dry_run:
-        click.secho(
-            "Performing a dry run, nothing will be created", fg="yellow"
-        )
-        
-    service_path =f"{os.getcwd()}/{name}"
+        click.secho("Performing a dry run, nothing will be created", fg="yellow")
+
+    service_path = f"{os.getcwd()}/{name}"
     input_data = json.load(in_file)
-    
+
     g = get_github_instance()
-    
+
     skeleton_repo = clone_repository(
-        repository_url=skeleton_url,
-        target=name,
-        branch=skeleton_branch
+        repository_url=skeleton_url, target=name, branch=skeleton_branch
     )
 
     service_repo = create_repository(
@@ -119,28 +126,32 @@ def create(
         public=public,
         visibility=visibility,
     )
-    
+
     # Since we copied the skeleton repo, we need to update the origin
-    skeleton_repo.delete_remote('origin')
-    origin = skeleton_repo.create_remote('origin', service_repo.clone_url)
+    skeleton_repo.delete_remote("origin")
+    origin = skeleton_repo.create_remote("origin", service_repo.clone_url)
     origin.push(refspec=f"{skeleton_branch}:{main_branch}")
-    context.invoke(set_default, organization=organization, repository_name=name, dry_run=dry_run)
+    context.invoke(
+        set_default, organization=organization, repository_name=name, dry_run=dry_run
+    )
 
     # PyGithub doesn't have good support with interacting with local repos
     subprocess.run(["git", "pull", "origin", main_branch], cwd=service_path)
     subprocess.run(["git", "checkout", "-b", init_branch], cwd=service_path)
 
     # Creating directories and copying properties files
-    create_directories(service_path, input_data['platform'])
-    copy_properties_files(service_path, input_data['platform'])
+    create_directories(service_path, input_data["platform"])
+    copy_properties_files(service_path, input_data["platform"])
 
     # Placing Jinja templates
-    template_paths, jinja_paths = list_jinja_templates(service_path / Path('.launch/jinja2'))
+    template_paths, jinja_paths = list_jinja_templates(
+        service_path / Path(".launch/jinja2")
+    )
     copy_and_render_templates(
-        base_dir=service_path, 
-        template_paths=template_paths, 
+        base_dir=service_path,
+        template_paths=template_paths,
         modified_paths=jinja_paths,
-        context_data = { "data": { "config": input_data }}
+        context_data={"data": {"config": input_data}},
     )
 
     # Remove the .launch directory
@@ -153,4 +164,6 @@ def create(
     # PyGithub doesn't have good support with interacting with local repos
     subprocess.run(["git", "add", "."], cwd=service_path)
     subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=service_path)
-    subprocess.run(["git", "push", "--set-upstream", "origin", init_branch], cwd=service_path)
+    subprocess.run(
+        ["git", "push", "--set-upstream", "origin", init_branch], cwd=service_path
+    )

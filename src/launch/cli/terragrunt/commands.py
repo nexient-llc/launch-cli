@@ -2,23 +2,23 @@ import json
 import logging
 import os
 from pathlib import Path
+
 import click
 
 from launch.automation.terragrunt.functions import *
-import os
-import os
 
 logger = logging.getLogger(__name__)
+
 
 @click.command()
 @click.option(
     "--repository-url",
     required=True,
-    help="(Required) The URL of the service repository to run the terragrunt command against."
-    )
+    help="(Required) The URL of the service repository to run the terragrunt command against.",
+)
 @click.option(
     "--git-token",
-    default=os.environ.get('GITHUB_TOKEN', None),
+    default=os.environ.get("GITHUB_TOKEN", None),
     required=True,
     help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get('TARGETENV', 'dev'),
+    default=os.environ.get("TARGETENV", "dev"),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
@@ -95,9 +95,7 @@ def plan(
     """Runs terragrunt plan against a git repository and its properties repo."""
 
     if dry_run:
-        click.secho(
-            "Performing a dry run, nothing will be updated", fg="yellow"
-        )
+        click.secho("Performing a dry run, nothing will be updated", fg="yellow")
 
     prepare_for_terragrunt(
         repository_url=repository_url,
@@ -109,7 +107,7 @@ def plan(
         skip_diff=skip_diff,
         is_infrastructure=is_infrastructure,
         path=path,
-        override=override
+        override=override,
     )
 
     terragrunt_init()
@@ -120,11 +118,11 @@ def plan(
 @click.option(
     "--repository-url",
     required=True,
-    help="(Required) The URL of the service repository to run the terragrunt command against."
-    )
+    help="(Required) The URL of the service repository to run the terragrunt command against.",
+)
 @click.option(
     "--git-token",
-    default=os.environ.get('GITHUB_TOKEN', None),
+    default=os.environ.get("GITHUB_TOKEN", None),
     required=True,
     help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
@@ -134,7 +132,7 @@ def plan(
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get('TARGETENV', 'dev'),
+    default=os.environ.get("TARGETENV", "dev"),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
@@ -201,9 +199,7 @@ def apply(
     """Runs terragrunt apply against a git repository and its properties repo."""
 
     if dry_run:
-        click.secho(
-            "Performing a dry run, nothing will be updated", fg="yellow"
-        )
+        click.secho("Performing a dry run, nothing will be updated", fg="yellow")
 
     prepare_for_terragrunt(
         repository_url=repository_url,
@@ -215,7 +211,7 @@ def apply(
         skip_diff=skip_diff,
         is_infrastructure=is_infrastructure,
         path=path,
-        override=override
+        override=override,
     )
 
     terragrunt_init()
@@ -226,11 +222,11 @@ def apply(
 @click.option(
     "--repository-url",
     required=True,
-    help="(Required) The URL of the service repository to run the terragrunt command against."
-    )
+    help="(Required) The URL of the service repository to run the terragrunt command against.",
+)
 @click.option(
     "--git-token",
-    default=os.environ.get('GITHUB_TOKEN', None),
+    default=os.environ.get("GITHUB_TOKEN", None),
     required=True,
     help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
@@ -240,7 +236,7 @@ def apply(
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get('TARGETENV', 'dev'),
+    default=os.environ.get("TARGETENV", "dev"),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
@@ -307,9 +303,7 @@ def destroy(
     """Runs terragrunt apply against a git repository and its properties repo."""
 
     if dry_run:
-        click.secho(
-            "Performing a dry run, nothing will be updated", fg="yellow"
-        )
+        click.secho("Performing a dry run, nothing will be updated", fg="yellow")
 
     prepare_for_terragrunt(
         repository_url=repository_url,
@@ -321,7 +315,7 @@ def destroy(
         skip_diff=skip_diff,
         is_infrastructure=is_infrastructure,
         path=path,
-        override=override
+        override=override,
     )
 
     terragrunt_init()

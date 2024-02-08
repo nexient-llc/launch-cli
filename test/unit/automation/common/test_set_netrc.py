@@ -1,6 +1,8 @@
 import os
-import pytest
 from unittest.mock import mock_open
+
+import pytest
+
 from launch.automation.common.functions import set_netrc
 
 
@@ -13,16 +15,18 @@ def test_set_netrc_success(mocker):
     set_netrc("password123", "example.com", "username")
 
     # Check if file was written correctly
-    mock_file_open.assert_called_once_with(os.path.expanduser('~/.netrc'), 'a')
+    mock_file_open.assert_called_once_with(os.path.expanduser("~/.netrc"), "a")
     handle = mock_file_open()
-    handle.write.assert_has_calls([
-        mocker.call("machine example.com\n"),
-        mocker.call("login username\n"),
-        mocker.call("password password123\n"),
-    ])
+    handle.write.assert_has_calls(
+        [
+            mocker.call("machine example.com\n"),
+            mocker.call("login username\n"),
+            mocker.call("password password123\n"),
+        ]
+    )
 
     # Check if os.chmod was called correctly
-    mock_chmod.assert_called_once_with(os.path.expanduser('~/.netrc'), 0o600)
+    mock_chmod.assert_called_once_with(os.path.expanduser("~/.netrc"), 0o600)
 
 
 def test_set_netrc_exception_during_write(mocker):

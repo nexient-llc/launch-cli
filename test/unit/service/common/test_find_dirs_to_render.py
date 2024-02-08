@@ -1,6 +1,8 @@
-from unittest.mock import MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock
+
 import pytest
+
 from launch.service.common import find_dirs_to_render
 
 
@@ -9,6 +11,7 @@ def test_find_dirs_to_render_no_wildcards(base_path):
     expected_result = [Path(base_path) / "dir1" / "dir2"]
     result = find_dirs_to_render(base_path, path_parts)
     assert result == expected_result
+
 
 def test_find_dirs_to_render_with_wildcards(base_path):
     path_parts = ["*", "dir2"]
@@ -24,10 +27,12 @@ def test_find_dirs_to_render_with_wildcards(base_path):
 
     assert result == [subdir2]
 
+
 def test_find_dirs_to_render_no_matching_directories(base_path):
     path_parts = ["nonexistent_dir", "*"]
     result = find_dirs_to_render(base_path, path_parts)
     assert result == []
+
 
 def test_find_dirs_to_render_permission_error(tmp_path):
     base_path = tmp_path / "protected_base_path"
@@ -41,6 +46,7 @@ def test_find_dirs_to_render_permission_error(tmp_path):
 
     # Reset permissions
     base_path.chmod(0o777)
+
 
 def test_find_dirs_to_render_mock(tmp_path):
     base_path = tmp_path / "mock_base_path"

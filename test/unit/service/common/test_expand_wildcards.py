@@ -1,6 +1,8 @@
-from unittest.mock import patch, MagicMock
-import pytest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from launch.service.common import expand_wildcards
 
 

@@ -1,19 +1,17 @@
 import logging
 import re
 import shutil
-from typing import List
 from pathlib import Path
+from typing import List
+
 from jinja2 import Environment, FileSystemLoader
 
 logger = logging.getLogger(__name__)
 
 
 def create_directories(
-    base_path: str,
-    platform_data: dict,
-    current_path: str = "platform"
-    ) -> None:
-
+    base_path: str, platform_data: dict, current_path: str = "platform"
+) -> None:
     if isinstance(platform_data, dict):
         for key, value in platform_data.items():
             if isinstance(value, dict):
@@ -28,16 +26,13 @@ def create_directories(
 
 
 def copy_properties_files(
-    base_path: str, 
-    platform_data: dict,
-    current_path="platform"
-    ) -> None:
-
+    base_path: str, platform_data: dict, current_path="platform"
+) -> None:
     if isinstance(platform_data, dict):
         for key, value in platform_data.items():
             if isinstance(value, dict):
                 copy_properties_files(base_path, value, Path(current_path) / key)
-            elif key == 'properties_file':
+            elif key == "properties_file":
                 dest_path = Path(base_path) / current_path
                 dest_path.mkdir(parents=True, exist_ok=True)
                 shutil.copy(value, dest_path)
@@ -49,12 +44,12 @@ def list_jinja_templates(base_dir: str) -> tuple:
     base_path = Path(base_dir)
     template_paths = []
     modified_paths = []
-    pattern = re.compile(r'\{\{.*?\}\}')
+    pattern = re.compile(r"\{\{.*?\}\}")
 
-    for jinja_file in base_path.rglob('*.j2'):
-        modified_path = pattern.sub('*', str(jinja_file))
-        modified_path = modified_path.replace(str(base_path), '')
-        modified_path = modified_path.lstrip('/')
+    for jinja_file in base_path.rglob("*.j2"):
+        modified_path = pattern.sub("*", str(jinja_file))
+        modified_path = modified_path.replace(str(base_path), "")
+        modified_path = modified_path.lstrip("/")
         modified_paths.append(modified_path)
         template_paths.append(jinja_file.as_posix())
 
@@ -65,21 +60,18 @@ def render_jinja_template(
     template_path: Path,
     destination_dir: str,
     file_name: str,
-    template_data: dict = {
-        'data': None
-    }
-    ) -> None:
-    
-    if not template_data.get('data'):
-        template_data['data'] = {}
+    template_data: dict = {"data": None},
+) -> None:
+    if not template_data.get("data"):
+        template_data["data"] = {}
 
     env = Environment(loader=FileSystemLoader(template_path.parent))
     template = env.get_template(template_path.name)
-    template_data['data']['path'] = str(destination_dir)
+    template_data["data"]["path"] = str(destination_dir)
     output = template.render(template_data)
     destination_path = destination_dir / file_name
 
-    with open(destination_path, 'w') as f:
+    with open(destination_path, "w") as f:
         f.write(output)
     logger.info(f"Rendered template saved to {destination_path}")
 
@@ -127,17 +119,13 @@ def find_dirs_to_render(base_path: str, path_parts: list) -> list:
 
 
 def copy_and_render_templates(
-    base_dir: str,
-    template_paths: list,
-    modified_paths: list,
-    context_data: dict = {}
-    ) -> None:
-
+    base_dir: str, template_paths: list, modified_paths: list, context_data: dict = {}
+) -> None:
     base_path = Path(base_dir)
     for template_path_str, modified_path in zip(template_paths, modified_paths):
         template_path = Path(template_path_str)
-        file_name = template_path.name.replace('.j2', '')
-        path_parts = modified_path.strip('/').split('/')
+        file_name = template_path.name.replace(".j2", "")
+        path_parts = modified_path.strip("/").split("/")
         dirs_to_render = find_dirs_to_render(base_path, path_parts[:-1])
         for dir_path in dirs_to_render:
             render_jinja_template(template_path, dir_path, file_name, context_data)

@@ -81,7 +81,8 @@ def create(
         click.secho(
             f"Performing a dry run, nothing will be updated in GitHub\n\
 repository_name: ${repository_name}\n\
-repository.name: ${repository.name}", fg="yellow"
+repository.name: ${repository.name}",
+            fg="yellow",
         )
     create_hook(
         repo=repository,

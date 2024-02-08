@@ -2,8 +2,8 @@ import click
 
 from .access import access_group
 from .hooks import hooks_group
-from .version import version_group
 from .repo import repo_group
+from .version import version_group
 
 
 @click.group(name="github")

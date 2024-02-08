@@ -1,7 +1,8 @@
-import os
 import json
-import pytest
+import os
 from pathlib import Path
+
+import pytest
 from click import testing as click_testing
 from git.repo import Repo
 
@@ -44,6 +45,7 @@ def fakedata():
     config_path = Path(__file__).parent / "unit" / "data" / "fakedata.json"
     with config_path.open() as f:
         return json.load(f)
+
 
 @pytest.fixture
 def base_path(tmp_path) -> str:
