@@ -14,9 +14,9 @@ def test_install_tool_versions_success(mocker):
 
     mock_run.assert_has_calls(
         [
-            mocker.call(["asdf", "plugin", "add", "tool1"], check=True),
-            mocker.call(["asdf", "plugin", "add", "tool2"], check=True),
-            mocker.call(["asdf", "install"], check=True),
+            mocker.call(["asdf", "plugin", "add", "tool1"]),
+            mocker.call(["asdf", "plugin", "add", "tool2"]),
+            mocker.call(["asdf", "install"]),
         ]
     )
 

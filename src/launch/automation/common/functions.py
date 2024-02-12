@@ -123,9 +123,9 @@ def install_tool_versions(file: str) -> None:
 
         for line in lines:
             plugin = line.split()[0]
-            subprocess.run(["asdf", "plugin", "add", plugin], check=True)
+            subprocess.run(["asdf", "plugin", "add", plugin])
 
-        subprocess.run(["asdf", "install"], check=True)
+        subprocess.run(["asdf", "install"])
     except Exception as e:
         raise RuntimeError(
             f"An error occurred with asdf install {file}: {str(e)}"
