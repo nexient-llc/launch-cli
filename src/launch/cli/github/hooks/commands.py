@@ -79,7 +79,10 @@ def create(
     repository = g.get_organization(login=organization).get_repo(name=repository_name)
     if dry_run:
         click.secho(
-            "Performing a dry run, nothing will be updated in GitHub", fg="yellow"
+            f"Performing a dry run, nothing will be updated in GitHub\n\
+repository_name: ${repository_name}\n\
+repository.name: ${repository.name}",
+            fg="yellow",
         )
     create_hook(
         repo=repository,
