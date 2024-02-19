@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--path",
     default=Path.cwd(),
-    help="Working directory path. Defaults to home (~).",
+    help="Working directory path. Defaults to current working directory.",
 )
 @click.option(
     "--override",
@@ -161,7 +161,7 @@ def plan(
 @click.option(
     "--path",
     default=Path.cwd(),
-    help="Working directory path. Defaults to home (~).",
+    help="Working directory path. Defaults to current working directory.",
 )
 @click.option(
     "--override",
@@ -265,7 +265,7 @@ def apply(
 @click.option(
     "--path",
     default=Path.cwd(),
-    help="Working directory path. Defaults to home (~).",
+    help="Working directory path. Defaults to current working directory.",
 )
 @click.option(
     "--override",
