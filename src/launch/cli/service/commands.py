@@ -20,6 +20,7 @@ from launch import (
 from launch.cli.github.access.commands import set_default
 from launch.github.auth import get_github_instance
 from launch.github.repo import clone_repository, create_repository
+from launch.local_repo.repo import checkout_branch, push_branch
 from launch.service.common import (
     copy_and_render_templates,
     copy_properties_files,
@@ -95,8 +96,6 @@ def create(
     organization: str,
     name: str,
     description: str,
-    skeleton_url: str,
-    skeleton_branch: str,
     public: bool,
     visibility: str,
     main_branch: str,
@@ -114,10 +113,6 @@ def create(
 
     g = get_github_instance()
 
-    skeleton_repo = clone_repository(
-        repository_url=skeleton_url, target=name, branch=skeleton_branch
-    )
-
     service_repo = create_repository(
         g=g,
         organization=organization,
@@ -127,43 +122,24 @@ def create(
         visibility=visibility,
     )
 
-    # Since we copied the skeleton repo, we need to update the origin
-    skeleton_repo.delete_remote("origin")
-    origin = skeleton_repo.create_remote("origin", service_repo.clone_url)
-    origin.push(refspec=f"{skeleton_branch}:{main_branch}")
     context.invoke(
         set_default, organization=organization, repository_name=name, dry_run=dry_run
     )
 
-    # PyGithub doesn't have good support with interacting with local repos
-    subprocess.run(["git", "pull", "origin", main_branch], cwd=service_path)
-    subprocess.run(["git", "checkout", "-b", init_branch], cwd=service_path)
+    clone_repository(
+        repository_url=service_repo.clone_url, target=name, branch=main_branch
+    )
+
+    checkout_branch(
+        path=service_path,
+        init_branch=init_branch,
+        main_branch=main_branch,
+        new_branch=True,
+    )
 
     # Creating directories and copying properties files
-    create_directories(service_path, input_data["platform"])
-    copy_properties_files(service_path, input_data["platform"])
+    create_directories(base_path=service_path, platform_data=input_data["platform"])
 
-    # Placing Jinja templates
-    template_paths, jinja_paths = list_jinja_templates(
-        service_path / Path(".launch/jinja2")
-    )
-    copy_and_render_templates(
-        base_dir=service_path,
-        template_paths=template_paths,
-        modified_paths=jinja_paths,
-        context_data={"data": {"config": input_data}},
-    )
+    copy_properties_files(base_path=service_path, platform_data=input_data["platform"])
 
-    # Remove the .launch directory
-    shutil.rmtree(f"{service_path}/.launch")
-    # Append .launch to .gitignore
-    # TODO: Convert to pathlib
-    with open(f"{service_path}/.gitignore", "a") as file:
-        file.write("# launch-cli tool\n.launch/\n")
-
-    # PyGithub doesn't have good support with interacting with local repos
-    subprocess.run(["git", "add", "."], cwd=service_path)
-    subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=service_path)
-    subprocess.run(
-        ["git", "push", "--set-upstream", "origin", init_branch], cwd=service_path
-    )
+    push_branch(path=service_path, init_branch=init_branch, commit_msg="Initial commit")
