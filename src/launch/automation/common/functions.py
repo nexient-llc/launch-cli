@@ -1,11 +1,17 @@
+import itertools
 import json
 import logging
 import os
+import pathlib
+import shutil
 import string
 import subprocess
 
 import git
 from git.repo import Repo
+from ruamel.yaml import YAML
+
+from launch import DISCOVERY_FORBIDDEN_DIRECTORIES
 
 logger = logging.getLogger(__name__)
 
@@ -182,3 +188,91 @@ def deploy_remote_state(provider_config: dict) -> None:
         subprocess.run(run_list, check=True)
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"An error occurred: {str(e)}") from e
+
+
+def discover_files(
+    root_path: pathlib.Path,
+    filename_partial: str = "",
+    forbidden_directories: list[str] = None,
+) -> list[pathlib.Path]:
+    """Recursively discovers files underneath a top level root_path that match a partial name.
+
+    Args:
+        root_path (pathlib.Path): Top level directory to search
+        filename_partial (str, optional): Case-insensitive part of the filename to search. Defaults to "", which will return all files. This partial search uses an 'in' expression, do not use a wildcard.
+        forbidden_directories (list[str], optional): List of strings to match in directory names that will not be traversed. Defaults to None, which forbids traversal of some common directories (.git, .terraform, etc.). To search all directories, pass an empty list.
+
+    Returns:
+        list[pathlib.Path]: List of pathlib.Path objects for files matching filename_partial.
+    """
+    if forbidden_directories is None:
+        forbidden_directories = DISCOVERY_FORBIDDEN_DIRECTORIES
+
+    directories = [
+        d
+        for d in root_path.iterdir()
+        if d.is_dir() and not d.name.lower() in forbidden_directories
+    ]
+    files = [
+        f
+        for f in root_path.iterdir()
+        if not f.is_dir() and filename_partial in f.name.lower()
+    ]
+    files.extend(
+        list(
+            itertools.chain.from_iterable(
+                [
+                    discover_files(
+                        root_path=d,
+                        filename_partial=filename_partial,
+                        forbidden_directories=forbidden_directories,
+                    )
+                    for d in directories
+                ]
+            )
+        )
+    )
+    return files
+
+
+def discover_directories(
+    root_path: pathlib.Path,
+    dirname_partial: str = "",
+    forbidden_directories: list[str] = None,
+) -> list[pathlib.Path]:
+    """Recursively discovers subdirectories underneath a top level root_path that match a partial name. If a subdirectory doesn't match that partial name, none of its children will be searched.
+
+    Args:
+        root_path (pathlib.Path): Top level directory to search
+        dirname_partial (str, optional): Case-insensitive part of the subdirectory name match. Defaults to "", which will return all subdirectories. This partial search uses an 'in' expression, do not use a wildcard.
+        forbidden_directories (list[str], optional): List of strings to match in directory names that will not be traversed. Defaults to None, which forbids traversal of some common directories (.git, .terraform, etc.). To search all directories, pass an empty list.
+
+    Returns:
+        list[pathlib.Path]: List of pathlib.Path objects for files matching filename_partial.
+    """
+
+    if forbidden_directories is None:
+        forbidden_directories = DISCOVERY_FORBIDDEN_DIRECTORIES
+
+    directories = [
+        d
+        for d in root_path.iterdir()
+        if d.is_dir()
+        and dirname_partial in d.name
+        and not d.name.lower() in forbidden_directories
+    ]
+    directories.extend(
+        list(
+            itertools.chain.from_iterable(
+                [
+                    discover_directories(
+                        root_path=d,
+                        dirname_partial=dirname_partial,
+                        forbidden_directories=forbidden_directories,
+                    )
+                    for d in directories
+                ]
+            )
+        )
+    )
+    return directories
