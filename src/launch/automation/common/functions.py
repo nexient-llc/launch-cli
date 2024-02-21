@@ -276,3 +276,54 @@ def discover_directories(
         )
     )
     return directories
+
+
+def load_yaml(yaml_file: pathlib.Path) -> dict:
+    """Instantiates a YAML parser and loads the content of a file containing YAML data.
+
+    Args:
+        yaml_file (pathlib.Path): Path to the YAML file
+
+    Returns:
+        dict: Dictionary containing the YAML structure
+    """
+    yaml_parser = YAML(typ="safe")
+    yaml_contents: dict = yaml_parser.load(stream=yaml_file)
+    return yaml_contents
+
+
+def unpack_archive(
+    archive_path: pathlib.Path,
+    destination: pathlib.Path = pathlib.Path.cwd(),
+    format_override: str = None,
+) -> None:
+    """Unpacks a single archive file to a desired destination directory. If the destination exists, it must be a directory. If it does not exist, it will be created.
+
+    Args:
+        archive_path (pathlib.Path): Path to a compressed archive
+        destination (pathlib.Path, optional): Folder into which the archive will unpack, maintaining its internal packed structure. Defaults to pathlib.Path.cwd().
+        format_override (str, optional): Override format detection with a particular format (one of "zip", "tar", "gztar", "bztar", or "xztar"). Defaults to None, which will detect format based on the filename.
+
+    Raises:
+        FileNotFoundError: Raised when the archive cannot be found
+        FileExistsError: Raised when the destination exists but is not a directory.
+    """
+    if not archive_path.exists():
+        raise FileNotFoundError(f"Supplied archive path {archive_path} does not exist!")
+
+    if destination.exists() and not destination.is_dir():
+        raise FileExistsError(
+            f"Supplied destination {destination} exists but is not a directory!"
+        )
+    destination.mkdir(parents=True, exist_ok=True)
+
+    if format_override is None:
+        logger.debug(f"Unpacking archive {archive_path} to {destination}")
+        shutil.unpack_archive(filename=archive_path, extract_dir=destination)
+    else:
+        logger.debug(
+            f"Unpacking archive {archive_path} to {destination} with overridden format {format_override}"
+        )
+        shutil.unpack_archive(
+            filename=archive_path, extract_dir=destination, format=format_override
+        )
