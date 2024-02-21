@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
     help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
-    "--is-infrastructure",
+    "--is-pipeline-resources",
     is_flag=True,
     default=False,
     help="If set, this changes the path to the infrastructure directory for deployment to run terragrunt against.",
@@ -87,7 +87,7 @@ def plan(
     provider_config: str,
     skip_git: bool,
     skip_diff: bool,
-    is_infrastructure: bool,
+    is_pipeline_resources: bool,
     path: str,
     override: dict,
     dry_run: bool,
@@ -105,7 +105,7 @@ def plan(
         provider_config=json.loads(provider_config),
         skip_git=skip_git,
         skip_diff=skip_diff,
-        is_infrastructure=is_infrastructure,
+        is_pipeline_resources=is_pipeline_resources,
         path=path,
         override=override,
     )
@@ -153,7 +153,7 @@ def plan(
     help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
-    "--is-infrastructure",
+    "--is-pipeline-resources",
     is_flag=True,
     default=False,
     help="If set, this changes the path to the infrastructure directory for deployment to run terragrunt against.",
@@ -191,7 +191,7 @@ def apply(
     provider_config: dict,
     skip_git: bool,
     skip_diff: bool,
-    is_infrastructure: bool,
+    is_pipeline_resources: bool,
     path: str,
     override: dict,
     dry_run: bool,
@@ -209,7 +209,7 @@ def apply(
         provider_config=json.loads(provider_config),
         skip_git=skip_git,
         skip_diff=skip_diff,
-        is_infrastructure=is_infrastructure,
+        is_pipeline_resources=is_pipeline_resources,
         path=path,
         override=override,
     )
@@ -257,7 +257,7 @@ def apply(
     help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
-    "--is-infrastructure",
+    "--is-pipeline-resources",
     is_flag=True,
     default=False,
     help="If set, this changes the path to the infrastructure directory for deployment to run terragrunt against.",
@@ -295,7 +295,7 @@ def destroy(
     provider_config: str,
     skip_git: bool,
     skip_diff: bool,
-    is_infrastructure: bool,
+    is_pipeline_resources: bool,
     path: str,
     override: dict,
     dry_run: bool,
@@ -313,7 +313,7 @@ def destroy(
         provider_config=json.loads(provider_config),
         skip_git=skip_git,
         skip_diff=skip_diff,
-        is_infrastructure=is_infrastructure,
+        is_pipeline_resources=is_pipeline_resources,
         path=path,
         override=override,
     )

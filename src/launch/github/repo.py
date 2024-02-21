@@ -48,8 +48,18 @@ def create_repository(
             description=description,
             private=not public,
             visibility=visibility,
+            auto_init=True,
         )
     except Exception as e:
         raise RuntimeError(
             f"Failed to create repository {name} in {organization}"
         ) from e
+
+
+def does_repo_exist(name: str, g: Github) -> bool:
+    try:
+        g.get_repo(name)
+        return True
+    except Exception as e:
+        logger.info(f"Repository {name} does not exist, {e}")
+        return False

@@ -1,6 +1,7 @@
 import logging
 import re
 import shutil
+import subprocess
 from pathlib import Path
 from typing import List
 
@@ -27,7 +28,7 @@ def create_directories(
 
 def copy_properties_files(
     base_path: str, platform_data: dict, current_path="platform"
-) -> None:
+) -> dict:
     if isinstance(platform_data, dict):
         for key, value in platform_data.items():
             if isinstance(value, dict):
@@ -36,8 +37,11 @@ def copy_properties_files(
                 dest_path = Path(base_path) / current_path
                 dest_path.mkdir(parents=True, exist_ok=True)
                 shutil.copy(value, dest_path)
+                relative_path = str(dest_path).removeprefix(f"{base_path}/")
+                platform_data[key] = f"{relative_path}/{value.split('/')[-1]}"
     elif isinstance(platform_data, list):
         pass
+    return platform_data
 
 
 def list_jinja_templates(base_dir: str) -> tuple:
@@ -129,3 +133,10 @@ def copy_and_render_templates(
         dirs_to_render = find_dirs_to_render(base_path, path_parts[:-1])
         for dir_path in dirs_to_render:
             render_jinja_template(template_path, dir_path, file_name, context_data)
+
+
+def write_launch_config(
+    data: dict,
+    path: Path,
+) -> None:
+    path.write_text(data)
