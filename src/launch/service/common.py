@@ -7,6 +7,8 @@ from typing import List
 
 from jinja2 import Environment, FileSystemLoader
 
+from launch import BUILD_DEPEPENDENCIES_DIR
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,18 +29,30 @@ def create_directories(
 
 
 def copy_properties_files(
-    base_path: str, platform_data: dict, current_path="platform"
+    platform_data: dict, base_path="", dest_base_path="", current_path="platform"
 ) -> dict:
     if isinstance(platform_data, dict):
         for key, value in platform_data.items():
             if isinstance(value, dict):
-                copy_properties_files(base_path, value, Path(current_path) / key)
+                copy_properties_files(
+                    base_path=base_path,
+                    platform_data=value,
+                    current_path=Path(current_path) / key,
+                    dest_base_path=dest_base_path,
+                )
             elif key == "properties_file":
                 dest_path = Path(base_path) / current_path
                 dest_path.mkdir(parents=True, exist_ok=True)
-                shutil.copy(value, dest_path)
+
+                logger.info(
+                    f"Copying {base_path}/{value} to {dest_base_path}{dest_path}"
+                )
+                shutil.copy(f"{base_path}/{value}", f"{dest_base_path}{dest_path}")
                 relative_path = str(dest_path).removeprefix(f"{base_path}/")
-                platform_data[key] = f"{relative_path}/{value.split('/')[-1]}"
+
+                platform_data[
+                    key
+                ] = f"{BUILD_DEPEPENDENCIES_DIR}/{relative_path}/{value.split('/')[-1]}"
     elif isinstance(platform_data, list):
         pass
     return platform_data

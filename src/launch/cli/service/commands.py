@@ -1,16 +1,14 @@
 import json
 import logging
 import os
-import re
 import shutil
-import subprocess
 from pathlib import Path
 from typing import IO, Any
 
 import click
-from jinja2 import Environment, FileSystemLoader
 
 from launch import (
+    BUILD_DEPEPENDENCIES_DIR,
     GITHUB_ORG_NAME,
     INIT_BRANCH,
     MAIN_BRANCH,
@@ -63,9 +61,9 @@ logger = logging.getLogger(__name__)
     help="The name of the main branch.",
 )
 @click.option(
-    "--init-branch",
+    "--remote-branch",
     default=INIT_BRANCH,
-    help="The name of the initial branch to create on the repository for a PR.",
+    help="The name of the remote branch when creating/updating a repository.",
 )
 @click.option(
     "--in-file",
@@ -78,6 +76,23 @@ logger = logging.getLogger(__name__)
     is_flag=True,
     default=False,
     help="Perform a dry run that reports on what it would do, but does not create webhooks.",
+)
+@click.option(
+    "--skip-git",
+    is_flag=True,
+    default=False,
+    help="If set, it will ignore cloning and checking out the git repository and it's properties.",
+)
+@click.option(
+    "--skip-commit",
+    is_flag=True,
+    default=False,
+    help="If set, it will skip commiting the local changes.",
+)
+@click.option(
+    "--git-message",
+    default="Initial commit",
+    help="The git commit message to use when creating a commit. Defaults to 'Initial commit'.",
 )
 @click.option(
     "--dry-run",
@@ -96,9 +111,12 @@ def create(
     public: bool,
     visibility: str,
     main_branch: str,
-    init_branch: str,
+    remote_branch: str,
     in_file: IO[Any],
     new_service: bool,
+    skip_git: bool,
+    skip_commit: bool,
+    git_message: str,
     dry_run: bool,
 ):
     """Creates a new service."""
@@ -106,18 +124,23 @@ def create(
     if dry_run:
         click.secho("Performing a dry run, nothing will be created", fg="yellow")
 
-    if does_repo_exist and new_service:
-        click.secho(
-            "Repo was already exists and the --new-service flag is specified. Please remove this flag to update a service.",
-            fg="red",
-        )
-
     service_path = f"{os.getcwd()}/{name}"
     input_data = json.load(in_file)
     input_data["skeleton"]["url"] = SERVICE_SKELETON
     input_data["skeleton"]["tag"] = SKELETON_BRANCH
 
     g = get_github_instance()
+
+    if does_repo_exist(name=name, g=g) and new_service:
+        click.secho(
+            "Repo already exists and the --new-service flag is specified. Please remove this flag to update a service.",
+            fg="red",
+        )
+    elif not does_repo_exist(name=name, g=g) and not new_service:
+        click.secho(
+            "Repo does not exist. Please use the --new-service flag to create a new service.",
+            fg="red",
+        )
 
     if new_service:
         service_repo = create_repository(
@@ -136,27 +159,38 @@ def create(
         )
     else:
         service_repo = g.get_repo(f"{organization}/{name}")
+        try:
+            shutil.rmtree(f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}")
+        except FileNotFoundError:
+            logger.info(
+                f"Directory not found when trying to delete: {service_path}/{BUILD_DEPEPENDENCIES_DIR}"
+            )
 
-    clone_repository(
-        repository_url=service_repo.clone_url, target=name, branch=main_branch
+    if not skip_git:
+        clone_repository(
+            repository_url=service_repo.clone_url, target=name, branch=main_branch
+        )
+        checkout_branch(
+            path=service_path,
+            init_branch=remote_branch,
+            main_branch=main_branch,
+            new_branch=True,
+        )
+
+    create_directories(
+        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}",
+        platform_data=input_data["platform"],
     )
-
-    checkout_branch(
-        path=service_path,
-        init_branch=init_branch,
-        main_branch=main_branch,
-        new_branch=True,
-    )
-
-    create_directories(base_path=service_path, platform_data=input_data["platform"])
     input_data["platform"] = copy_properties_files(
-        base_path=service_path, platform_data=input_data["platform"]
+        dest_base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
+        platform_data=input_data["platform"],
     )
     write_launch_config(
         data=json.dumps(input_data, indent=4),
         path=Path(f"{service_path}/.launch_config"),
     )
-    push_branch(path=service_path, init_branch=init_branch, commit_msg="Initial commit")
+    if not skip_commit:
+        push_branch(path=service_path, branch=remote_branch, commit_msg=git_message)
 
 
 @click.command()
@@ -190,18 +224,11 @@ def create(
     help="If set, it will ignore cloning and checking out the git repository and it's properties.",
 )
 @click.option(
-    "--skip-cleanup",
-    is_flag=True,
-    default=False,
-    help="If set, it will skip deleting the gernerated code after the command is finished.",
-)
-@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
     help="Perform a dry run that reports on what it would do, but does not create webhooks.",
 )
-@click.pass_context
 # TODO: Optimize this function and logic
 # Ticket: 1633
 def generate(
@@ -211,7 +238,6 @@ def generate(
     skeleton_branch: str,
     service_branch: str,
     skip_git: bool,
-    skip_cleanup: bool,
     dry_run: bool,
 ):
     """Dynamically gneerates terragrunt files based off a service."""
@@ -219,37 +245,72 @@ def generate(
     if dry_run:
         click.secho("Performing a dry run, nothing will be created", fg="yellow")
 
-    service_path = f"{os.getcwd()}/{name}-singleRun"
+    singlerun_path = f"{os.getcwd()}/{name}-singleRun"
+    service_path = f"{os.getcwd()}/{name}"
 
     g = get_github_instance()
     repo = g.get_repo(f"{organization}/{name}")
 
-    skeleton_repo = clone_repository(
+    clone_repository(
         repository_url=skeleton_url, target=f"{name}-singleRun", branch=skeleton_branch
     )
 
     if not skip_git:
-        service_repo = clone_repository(
+        clone_repository(
             repository_url=repo.clone_url, target=f"{name}", branch=service_branch
         )
 
-    with open(f"{os.getcwd()}/{name}", "r") as f:
+    shutil.copytree(
+        f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}",
+        f"{singlerun_path}/{BUILD_DEPEPENDENCIES_DIR}",
+        dirs_exist_ok=True,
+    )
+
+    with open(f"{os.getcwd()}/{name}/.launch_config", "r") as f:
         input_data = json.load(f)
 
     # Creating directories and copying properties files
-    create_directories(service_path, input_data["platform"])
-    copy_properties_files(service_path, input_data["platform"])
+    create_directories(singlerun_path, input_data["platform"])
+    copy_properties_files(
+        base_path=singlerun_path, platform_data=input_data["platform"]
+    )
 
     # Placing Jinja templates
     template_paths, jinja_paths = list_jinja_templates(
-        service_path / Path(".launch/jinja2")
+        singlerun_path / Path(f"{BUILD_DEPEPENDENCIES_DIR}/jinja2")
     )
     copy_and_render_templates(
-        base_dir=service_path,
+        base_dir=singlerun_path,
         template_paths=template_paths,
         modified_paths=jinja_paths,
         context_data={"data": {"config": input_data}},
     )
 
-    if not skip_cleanup:
+    # Remove the .launch directory
+    shutil.rmtree(f"{singlerun_path}/.launch")
+
+
+@click.command()
+@click.option(
+    "--name", required=True, help="(Required) Name of the service to  be created."
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Perform a dry run that reports on what it would do, but does not create webhooks.",
+)
+def cleanup(
+    name: str,
+    dry_run: bool,
+):
+    """Cleans up launch-cli reources that are created from code generation."""
+
+    if dry_run:
+        click.secho("Performing a dry run, nothing will be cleaned", fg="yellow")
+
+    try:
         shutil.rmtree(f"{os.getcwd()}/{name}-singleRun")
+        logger.info(f"Deleted {name}-singleRun directory.")
+    except FileNotFoundError:
+        click.secho(f"Repository not found: {os.getcwd()}/{name}", fg="red")

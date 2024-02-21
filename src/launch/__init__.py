@@ -9,3 +9,4 @@ SERVICE_SKELETON = "https://github.com/nexient-llc/launch-terragrunt-skeleton.gi
 SKELETON_BRANCH = "main"
 MAIN_BRANCH = "main"
 INIT_BRANCH = "feature/init"
+BUILD_DEPEPENDENCIES_DIR = ".launch"

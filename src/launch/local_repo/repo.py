@@ -14,7 +14,8 @@ def checkout_branch(
         subprocess.run(["git", "checkout", init_branch], cwd=path)
 
 
-def push_branch(path: str, init_branch: str, commit_msg="Initial commit") -> None:
+def push_branch(path: str, branch: str, commit_msg="Initial commit") -> None:
+    logger.info(f"path: {path}, branch: {branch}, commit_msg: {commit_msg}")
     subprocess.run(["git", "add", "."], cwd=path)
     subprocess.run(["git", "commit", "-m", commit_msg], cwd=path)
-    subprocess.run(["git", "push", "--set-upstream", "origin", init_branch], cwd=path)
+    subprocess.run(["git", "push", "--set-upstream", "origin", branch], cwd=path)

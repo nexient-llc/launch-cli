@@ -61,5 +61,5 @@ def does_repo_exist(name: str, g: Github) -> bool:
         g.get_repo(name)
         return True
     except Exception as e:
-        logger.info(f"Repository {name} does not exist, {e}")
+        logger.info(f"Repository {name} does not exist")
         return False
