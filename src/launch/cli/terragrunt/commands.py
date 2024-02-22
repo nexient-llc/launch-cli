@@ -9,8 +9,7 @@ from launch import GITHUB_ORG_NAME
 from launch.automation.terragrunt.functions import *
 from launch.cli.service.commands import generate
 from launch.github.auth import get_github_instance
-from launch.github.repo import clone_repository
-from launch.local_repo.repo import checkout_branch
+from launch.local_repo.repo import checkout_branch, clone_repository
 
 logger = logging.getLogger(__name__)
 
@@ -130,19 +129,23 @@ def plan(
             repository=service_repo,
             main_branch=commit_sha,
         )
+    else:
+        service_repo = Repo(f"{path}/{name}")
+
     if not skip_generation:
         context.invoke(
             generate,
             organization=organization,
             name=name,
             service_branch=commit_sha,
-            skip_git=skip_git,
+            skip_git=True,
             work_dir=path,
             dry_run=dry_run,
         )
 
     prepare_for_terragrunt(
         repository=service_repo,
+        name=name,
         git_token=git_token,
         commit_sha=commit_sha,
         target_environment=target_environment,
@@ -272,19 +275,23 @@ def apply(
             repository=service_repo,
             main_branch=commit_sha,
         )
+    else:
+        service_repo = Repo(f"{path}/{name}")
+
     if not skip_generation:
         context.invoke(
             generate,
             organization=organization,
             name=name,
             service_branch=commit_sha,
-            skip_git=skip_git,
+            skip_git=True,
             work_dir=path,
             dry_run=dry_run,
         )
 
     prepare_for_terragrunt(
         repository=service_repo,
+        name=name,
         git_token=git_token,
         commit_sha=commit_sha,
         target_environment=target_environment,
@@ -414,19 +421,23 @@ def destroy(
             repository=service_repo,
             main_branch=commit_sha,
         )
+    else:
+        service_repo = Repo(f"{path}/{name}")
+
     if not skip_generation:
         context.invoke(
             generate,
             organization=organization,
             name=name,
             service_branch=commit_sha,
-            skip_git=skip_git,
+            skip_git=True,
             work_dir=path,
             dry_run=dry_run,
         )
 
     prepare_for_terragrunt(
         repository=service_repo,
+        name=name,
         git_token=git_token,
         commit_sha=commit_sha,
         target_environment=target_environment,

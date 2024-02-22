@@ -4,7 +4,7 @@ import os
 import string
 import subprocess
 
-from git.repo import Repo
+from git import Repo
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,7 @@ def check_git_changes(
     directory: str,
 ) -> bool:
     logger.info(f"Checking if git changes are exclusive to: {directory}")
+
     origin = repository.remotes.origin
     origin.fetch()
 

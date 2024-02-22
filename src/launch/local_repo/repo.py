@@ -1,7 +1,7 @@
 import logging
 import subprocess
 
-from git import Repo
+from git import GitCommandError, Repo
 
 from launch import INIT_BRANCH
 
@@ -18,10 +18,25 @@ def checkout_branch(
         else:
             repository.git.checkout(main_branch)
             logger.info(f"Checked out branch: {main_branch}")
-    except git.GitCommandError as e:
+    except GitCommandError as e:
         raise RuntimeError(
             f"An error occurred while checking out {main_branch}:  {str(e)}"
         ) from e
+
+
+def clone_repository(repository_url: str, target: str, branch: str) -> Repo:
+    try:
+        logger.info(f"Attempting to clone repository: {repository_url} into {target}")
+        repository = Repo.clone_from(repository_url, target, branch=branch)
+        logger.info(f"Repository {repository_url} cloned successfully to {target}")
+    except GitCommandError as e:
+        logger.error(
+            f"Error occurred while cloning the repository: {repository_url}, Error: {e}"
+        )
+        raise RuntimeError(
+            f"An error occurred while cloning the repository: {repository_url}"
+        ) from e
+    return repository
 
 
 def push_branch(path: str, branch: str, commit_msg="Initial commit") -> None:

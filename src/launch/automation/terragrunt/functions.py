@@ -116,6 +116,7 @@ def terragrunt_destroy(file=None, run_all=True):
 # 7. Changing the directory to the terragrunt directory
 def prepare_for_terragrunt(
     repository: Repo,
+    name: str,
     git_token: str,
     commit_sha: str,
     target_environment: str,
@@ -125,7 +126,7 @@ def prepare_for_terragrunt(
     path: str,
     override: dict,
 ):
-    os.chdir(f"{path}/{repository.name}{CODE_GENERATION_DIR_SUFFIX}")
+    os.chdir(f"{path}/{name}{CODE_GENERATION_DIR_SUFFIX}")
 
     install_tool_versions(
         file=override["tool_versions_file"],
@@ -139,7 +140,7 @@ def prepare_for_terragrunt(
         if provider_config["provider"] == "aws":
             assume_role(
                 provider_config=provider_config,
-                repository_name=repository.name,
+                repository_name=name,
                 target_environment=target_environment,
             )
         if provider_config["provider"] == "az":

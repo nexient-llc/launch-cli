@@ -17,8 +17,8 @@ from launch import (
 )
 from launch.cli.github.access.commands import set_default
 from launch.github.auth import get_github_instance
-from launch.github.repo import clone_repository, create_repository, does_repo_exist
-from launch.local_repo.repo import checkout_branch, push_branch
+from launch.github.repo import create_repository, does_repo_exist
+from launch.local_repo.repo import checkout_branch, clone_repository, push_branch
 from launch.service.common import (
     copy_and_render_templates,
     copy_properties_files,
