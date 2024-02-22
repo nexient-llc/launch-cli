@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import shutil
 from pathlib import Path
 from typing import IO, Any
@@ -9,6 +8,7 @@ import click
 
 from launch import (
     BUILD_DEPEPENDENCIES_DIR,
+    CODE_GENERATION_DIR_SUFFIX,
     GITHUB_ORG_NAME,
     INIT_BRANCH,
     MAIN_BRANCH,
@@ -124,7 +124,7 @@ def create(
     if dry_run:
         click.secho("Performing a dry run, nothing will be created", fg="yellow")
 
-    service_path = f"{os.getcwd()}/{name}"
+    service_path = f"{Path.cwd()}/{name}"
     input_data = json.load(in_file)
     input_data["skeleton"]["url"] = SERVICE_SKELETON
     input_data["skeleton"]["tag"] = SKELETON_BRANCH
@@ -167,11 +167,11 @@ def create(
             )
 
     if not skip_git:
-        clone_repository(
+        repository = clone_repository(
             repository_url=service_repo.clone_url, target=name, branch=main_branch
         )
         checkout_branch(
-            path=service_path,
+            repository=repository,
             init_branch=remote_branch,
             main_branch=main_branch,
             new_branch=True,
@@ -203,16 +203,6 @@ def create(
     "--name", required=True, help="(Required) Name of the service to  be created."
 )
 @click.option(
-    "--skeleton-url",
-    default=SERVICE_SKELETON,
-    help="A skeleton repository url that this command will utilize during this creation.",
-)
-@click.option(
-    "--skeleton-branch",
-    default=SKELETON_BRANCH,
-    help="The branch or tag to use from the skeleton repository.",
-)
-@click.option(
     "--service-branch",
     default=MAIN_BRANCH,
     help="The name of the service branch.",
@@ -222,6 +212,11 @@ def create(
     is_flag=True,
     default=False,
     help="If set, it will ignore cloning and checking out the git repository and it's properties.",
+)
+@click.option(
+    "--work-dir",
+    default=Path.cwd(),
+    help="",
 )
 @click.option(
     "--dry-run",
@@ -234,10 +229,9 @@ def create(
 def generate(
     organization: str,
     name: str,
-    skeleton_url: str,
-    skeleton_branch: str,
     service_branch: str,
     skip_git: bool,
+    work_dir: Path,
     dry_run: bool,
 ):
     """Dynamically gneerates terragrunt files based off a service."""
@@ -245,29 +239,33 @@ def generate(
     if dry_run:
         click.secho("Performing a dry run, nothing will be created", fg="yellow")
 
-    singlerun_path = f"{os.getcwd()}/{name}-singleRun"
-    service_path = f"{os.getcwd()}/{name}"
+    singlerun_path = f"{work_dir}/{name}{CODE_GENERATION_DIR_SUFFIX}"
+    service_path = f"{Path.cwd()}/{name}"
 
     g = get_github_instance()
     repo = g.get_repo(f"{organization}/{name}")
 
-    clone_repository(
-        repository_url=skeleton_url, target=f"{name}-singleRun", branch=skeleton_branch
-    )
-
     if not skip_git:
         clone_repository(
-            repository_url=repo.clone_url, target=f"{name}", branch=service_branch
+            repository_url=repo.clone_url,
+            target=f"{work_dir}/{name}",
+            branch=service_branch,
         )
+
+    with open(f"{work_dir}/{name}/.launch_config", "r") as f:
+        input_data = json.load(f)
+
+    clone_repository(
+        repository_url=input_data["skeleton"]["url"],
+        target=singlerun_path,
+        branch=input_data["skeleton"]["tag"],
+    )
 
     shutil.copytree(
         f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}",
         f"{singlerun_path}/{BUILD_DEPEPENDENCIES_DIR}",
         dirs_exist_ok=True,
     )
-
-    with open(f"{os.getcwd()}/{name}/.launch_config", "r") as f:
-        input_data = json.load(f)
 
     # Creating directories and copying properties files
     create_directories(singlerun_path, input_data["platform"])
@@ -295,6 +293,11 @@ def generate(
     "--name", required=True, help="(Required) Name of the service to  be created."
 )
 @click.option(
+    "--work-dir",
+    default=Path.cwd(),
+    help="",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -302,6 +305,7 @@ def generate(
 )
 def cleanup(
     name: str,
+    work_dir: Path,
     dry_run: bool,
 ):
     """Cleans up launch-cli reources that are created from code generation."""
@@ -310,7 +314,10 @@ def cleanup(
         click.secho("Performing a dry run, nothing will be cleaned", fg="yellow")
 
     try:
-        shutil.rmtree(f"{os.getcwd()}/{name}-singleRun")
-        logger.info(f"Deleted {name}-singleRun directory.")
+        shutil.rmtree(f"{work_dir}/{name}{CODE_GENERATION_DIR_SUFFIX}")
+        logger.info(f"Deleted {work_dir}/{name}{CODE_GENERATION_DIR_SUFFIX} directory.")
     except FileNotFoundError:
-        click.secho(f"Repository not found: {os.getcwd()}/{name}", fg="red")
+        click.secho(
+            f"Repository not found: {work_dir}/{name}{CODE_GENERATION_DIR_SUFFIX}",
+            fg="red",
+        )

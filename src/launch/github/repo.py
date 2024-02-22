@@ -19,7 +19,7 @@ def get_github_repos(
     return repos
 
 
-def clone_repository(repository_url: str, target: str, branch: str):
+def clone_repository(repository_url: str, target: str, branch: str) -> Repo:
     try:
         logger.info(f"Attempting to clone repository: {repository_url} into {target}")
         repository = Repo.clone_from(repository_url, target, branch=branch)

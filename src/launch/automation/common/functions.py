@@ -4,64 +4,20 @@ import os
 import string
 import subprocess
 
-import git
 from git.repo import Repo
 
 logger = logging.getLogger(__name__)
 
 
-## GIT Specific Functions
-def git_clone(skip_git: str, target_dir: str, clone_url: str) -> Repo:
-    if not skip_git:
-        try:
-            logger.info(f"Cloning repository: {clone_url} into {target_dir}")
-            repository = Repo.clone_from(clone_url, target_dir)
-        except git.GitCommandError as e:
-            logger.error(
-                f"Error occurred while cloning the repository: {clone_url}, Error: {e}"
-            )
-            raise RuntimeError(
-                f"An error occurred while cloning the repository: {clone_url}"
-            ) from e
-        return repository
-    else:
-        try:
-            logger.info(f"Getting repository: {clone_url} into {target_dir}")
-            if clone_url.endswith(".git"):
-                clone_url = clone_url[:-4]
-            repo_name = clone_url.split("/")[-1:]
-            repository = Repo(f"./{repo_name[0]}")
-        except (git.GitCommandError, git.exc.NoSuchPathError) as e:
-            logger.error(
-                f"Error occurred while getting the repository: {clone_url}, Error: {e}"
-            )
-            raise RuntimeError(
-                f"An error occurred while getting the repository: {clone_url}"
-            ) from e
-        return repository
-
-
-def git_checkout(skip_git, repository: Repo, branch=None, new_branch=False) -> None:
-    if skip_git:
-        return None
-    if branch:
-        try:
-            if new_branch:
-                repository.git.checkout("-b", branch)
-                logger.info(f"Checked out new branch: {branch}")
-            else:
-                repository.git.checkout(branch)
-                logger.info(f"Checked out branch: {branch}")
-        except git.GitCommandError as e:
-            raise RuntimeError(
-                f"An error occurred while checking out {branch}:  {str(e)}"
-            ) from e
-
-
 ## Other Functions
-def check_git_changes(repository, commit_id, main_branch, directory) -> bool:
+def check_git_changes(
+    repository: Repo,
+    commit_id: str,
+    main_branch: str,
+    directory: str,
+) -> bool:
     logger.info(f"Checking if git changes are exclusive to: {directory}")
-    origin = repository.remote(name="origin")
+    origin = repository.remotes.origin
     origin.fetch()
 
     commit_main = repository.commit(f"origin/{main_branch}")
