@@ -30,16 +30,15 @@ For either case, you will need to have Python 3.11 or greater installed on your 
 1. Issue the following command to install the latest version:
 
 ```sh
-python3.11 -m pip install 'git+https://github.com/nexient-llc/launch-cli.git#egg=launch'
+python3.11 -m pip install launch-cli
 ```
 
 2. You can now use the `launch` command family from your CLI. Issue `launch --help` to confirm the launch command is available in your shell.
 
-In the unlikely event that you need to install a specific version of `launch-cli` you may specify a revision, branch name, or tag like so:
+In the unlikely event that you need to install a specific version of `launch-cli` you may specify a version found on our [releases page](https://github.com/nexient-llc/launch-cli/releases):
 
 ```sh
-# Tag 0.1.0 is used here, but you could specify a branch name or commit hash if desired
-python3.11 -m pip install 'git+https://github.com/nexient-llc/launch-cli.git@0.1.0#egg=launch'
+python3.11 -m pip install launch-cli==0.1.0
 ```
 
 ### Development Installation
@@ -48,17 +47,6 @@ python3.11 -m pip install 'git+https://github.com/nexient-llc/launch-cli.git@0.1
 2. Create a new virtual environment and activate it with `python3.11 -m venv .venv && source .venv/bin/activate`.
 4. Issue the command `python3.11 -m pip install -e '.[dev]'` to create an editable installation.
 5. You can now use the `launch` command family from your CLI, and changes made to most code should be available the next time you run the CLI command, but changes to the entrypoint or pyproject.toml may require that you issue the pip install command again to update the generated shortcut.
-
-#### ZSH-specific configuration
-
-If you use ZSH as your shell, we highly recommend you make one further modification to make development easier. By default, ZSH allows you to change directories without entering the cd command, which is a problem if you have a directory name that shadows the name of the command you're trying to run! Edit your ~/.zshrc file to include the following:
-
-```sh
-# Disables changing directory without issuing the cd command
-unsetopt autocd
-```
-
-Upon sourcing the file or restarting, this will stop your shell from descending into the launch/ directory when your current working directory is the root of this repository.
 
 ## Usage
 
