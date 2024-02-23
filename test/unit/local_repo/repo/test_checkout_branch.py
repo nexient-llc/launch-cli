@@ -1,0 +1,46 @@
+import logging
+from unittest.mock import MagicMock, patch
+
+import pytest
+from git.exc import GitCommandError
+
+from launch.local_repo.repo import checkout_branch
+
+
+@pytest.fixture
+def mock_repository():
+    repo = MagicMock()
+    repo.git.checkout = MagicMock()
+    return repo
+
+
+def test_checkout_new_branch(mock_repository, mocker):
+    init_branch = "development"
+    with patch.object(logging, "info") as mock_log_info:
+        checkout_branch(mock_repository, "main", init_branch, new_branch=True)
+
+    mock_repository.git.checkout.assert_called_once_with("-b", init_branch)
+
+
+def test_checkout_existing_branch(mock_repository, mocker):
+    main_branch = "main"
+    with patch.object(logging, "info") as mock_log_info:
+        checkout_branch(mock_repository, main_branch)
+
+    mock_repository.git.checkout.assert_called_once_with(main_branch)
+
+
+def test_checkout_branch_exception(mock_repository, mocker):
+    main_branch = "main"
+    error_message = "error"
+    mock_repository.git.checkout.side_effect = GitCommandError(
+        "checkout", error_message
+    )
+
+    with patch.object(logging, "info"), pytest.raises(RuntimeError) as exc_info:
+        checkout_branch(mock_repository, main_branch)
+
+    expected_error = f"An error occurred while checking out {main_branch}:"
+    actual_error = str(exc_info.value)
+    assert expected_error in actual_error
+    assert error_message in actual_error

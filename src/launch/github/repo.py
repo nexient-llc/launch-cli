@@ -1,6 +1,5 @@
 import logging
 
-import git
 from git.repo import Repo
 from github import Github
 from github.AuthenticatedUser import AuthenticatedUser
