@@ -30,12 +30,9 @@ def clone_repository(repository_url: str, target: str, branch: str) -> Repo:
         repository = Repo.clone_from(repository_url, target, branch=branch)
         logger.info(f"Repository {repository_url} cloned successfully to {target}")
     except GitCommandError as e:
-        logger.error(
-            f"Error occurred while cloning the repository: {repository_url}, Error: {e}"
-        )
-        raise RuntimeError(
-            f"An error occurred while cloning the repository: {repository_url}"
-        ) from e
+        message = f"Error occurred while cloning the repository from {repository_url}"
+        logger.exception(message)
+        raise RuntimeError(message) from e
     return repository
 
 
