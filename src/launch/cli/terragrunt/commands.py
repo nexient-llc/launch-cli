@@ -310,7 +310,7 @@ def apply(
 @click.option(
     "--organization",
     default=GITHUB_ORG_NAME,
-    help="GitHub organization containing your repository. Defaults to the nexient-llc organization.",
+    help=f"GitHub organization containing your repository. Defaults to the {GITHUB_ORG_NAME} organization.",
 )
 @click.option(
     "--name",
