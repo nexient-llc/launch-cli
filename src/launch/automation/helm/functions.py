@@ -8,6 +8,14 @@ logger = logging.getLogger(__name__)
 
 
 def resolve_dependencies(helm_directory: pathlib.Path) -> None:
+    """Recursive function to resolve Helm dependencies based on Chart.yaml file in provided path.
+
+    Args:
+        helm_directory (pathlib.Path): Directory containing a Chart.yaml file.
+
+    Raises:
+        FileNotFoundError: If no Chart.yaml is found in the provided directory.
+    """
     # Entrypoint for CLI logic
     top_level_chart = helm_directory.joinpath("Chart.yaml")
 
@@ -16,10 +24,25 @@ def resolve_dependencies(helm_directory: pathlib.Path) -> None:
 
     dependencies = extract_dependencies_from_chart(chart_file=top_level_chart)
     for dependency in dependencies:
-        # Your looping / recursion logic here
-        # discover_files(...), unpack_archive(...), etc.
-        # subprocess.call(["helm", "dep", "build", "."])
-        ...
+        if dependency["repository"].startswith("file://"):
+            # Local dependency, no need to fetch
+            continue
+        else:
+            subprocess.call(
+                ["helm", "repo", "add", dependency["name"], dependency["repository"]]
+            )
+
+    subprocess.call(["helm", "dep", "build", "."], cwd=helm_directory)
+    for dependency in dependencies:
+        # Discover the dependency archives -- there should be one for each version, but only ever one version included as a dependency.
+        dependency_archives = discover_files(
+            helm_directory.joinpath("charts"), filename_partial=dependency["name"]
+        )
+        for dependency_archive in dependency_archives:
+            unpack_archive(dependency_archive, helm_directory.joinpath("charts"))
+            resolve_dependencies(
+                helm_directory.joinpath(f"charts/{dependency['name']}")
+            )
 
 
 def extract_dependencies_from_chart(chart_file: pathlib.Path) -> list[dict[str, str]]:

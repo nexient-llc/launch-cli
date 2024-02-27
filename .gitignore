@@ -170,3 +170,6 @@ components/
 
 # Semverbot config
 .semverbot.toml
+
+# Devcontainer
+.devcontainer

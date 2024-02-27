@@ -14,11 +14,19 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--path",
     default=pathlib.Path.cwd(),
+    type=click.Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        resolve_path=True,
+        path_type=pathlib.Path,
+    ),
     help="Path to a folder containing your Chart.yaml. Defaults to the current working directory.",
 )
 def resolve_dependencies(path: pathlib.Path):
     """Resolves nested dependencies for a Helm chart."""
     try:
+        logger.debug(f"Resolving Helm dependencies in {path}.")
         resolve_helm_dependencies(helm_directory=path)
     except Exception as e:
         logger.exception("A failure occurred while resolving Helm dependencies.")

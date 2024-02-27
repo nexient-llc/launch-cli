@@ -59,6 +59,7 @@ def cli(context: click.core.Context, verbose: bool, version: bool):
 
 
 from .github import github_group
+from .helm import helm_group
 from .service import service_group
 from .terragrunt import terragrunt_group
 
@@ -66,3 +67,4 @@ cli.add_command(get_version)
 cli.add_command(github_group)
 cli.add_command(terragrunt_group)
 cli.add_command(service_group)
+cli.add_command(helm_group)
