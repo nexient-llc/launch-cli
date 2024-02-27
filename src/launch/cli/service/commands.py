@@ -234,7 +234,7 @@ def generate(
     work_dir: Path,
     dry_run: bool,
 ):
-    """Dynamically gneerates terragrunt files based off a service."""
+    """Dynamically generates terragrunt files based off a service."""
 
     if dry_run:
         click.secho("Performing a dry run, nothing will be created", fg="yellow")
