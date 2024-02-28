@@ -1,13 +1,14 @@
+import json
 import logging
 import re
 import shutil
-import subprocess
 from pathlib import Path
 from typing import List
 
+import yaml
 from jinja2 import Environment, FileSystemLoader
 
-from launch import BUILD_DEPEPENDENCIES_DIR
+from launch import BUILD_DEPEPENDENCIES_DIR, SERVICE_SKELETON, SKELETON_BRANCH
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,10 @@ def create_directories(
 
 
 def copy_properties_files(
-    platform_data: dict, base_path="", dest_base_path="", current_path="platform"
+    platform_data: dict,
+    base_path: Path = Path(""),
+    dest_base_path: Path = Path(""),
+    current_path="platform",
 ) -> dict:
     if isinstance(platform_data, dict):
         for key, value in platform_data.items():
@@ -47,7 +51,7 @@ def copy_properties_files(
                 logger.info(
                     f"Copying {base_path}/{value} to {dest_base_path}{dest_path}"
                 )
-                shutil.copy(f"{base_path}/{value}", f"{dest_base_path}{dest_path}")
+                shutil.copy(base_path / value, dest_base_path / dest_path)
                 relative_path = str(dest_path).removeprefix(f"{base_path}/")
 
                 platform_data[
@@ -149,8 +153,25 @@ def copy_and_render_templates(
             render_jinja_template(template_path, dir_path, file_name, context_data)
 
 
-def write_launch_config(
-    data: dict,
-    path: Path,
-) -> None:
-    path.write_text(data)
+def write_text(path: Path, data: dict, output_format: str = "json") -> None:
+    if output_format == "json":
+        serialized_data = json.dumps(data)
+    elif output_format == "yaml":
+        serialized_data = yaml.dump(data)
+    else:
+        message = f"Unsupported output format: {output_format}"
+        logger.error(message)
+        raise ValueError(message)
+
+    path.write_text(serialized_data)
+
+
+def input_data_validation(input_data: dict) -> dict:
+    if not "skeleton" in input_data:
+        input_data["skeleton"]: dict[str, str] = {}
+    if not "url" in input_data["skeleton"]:
+        input_data["skeleton"]["url"] = SERVICE_SKELETON
+    if not "tag" in input_data["skeleton"]:
+        input_data["skeleton"]["url"] = SKELETON_BRANCH
+
+    return input_data

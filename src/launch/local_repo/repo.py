@@ -9,19 +9,21 @@ logger = logging.getLogger(__name__)
 
 
 def checkout_branch(
-    repository: Repo, main_branch: str, init_branch=INIT_BRANCH, new_branch=False
+    repository: Repo, target_branch: str, new_branch: bool = False
 ) -> None:
+    command_args = []
+    if new_branch:
+        command_args.append("-b")
+    command_args.append(target_branch)
+
     try:
-        if new_branch:
-            repository.git.checkout("-b", init_branch)
-            logger.info(f"Checked out new branch: {init_branch}")
-        else:
-            repository.git.checkout(main_branch)
-            logger.info(f"Checked out branch: {main_branch}")
+        logger.debug(f"{repository}: git checkout {' '.join(command_args)}")
+        repository.git.checkout(command_args)
+        logger.info(f"Checked out branch {target_branch}")
     except GitCommandError as e:
-        raise RuntimeError(
-            f"An error occurred while checking out {main_branch}:  {str(e)}"
-        ) from e
+        message = f"An error occurred while checking out {target_branch}"
+        logger.exception(message)
+        raise RuntimeError(message) from e
 
 
 def clone_repository(repository_url: str, target: str, branch: str) -> Repo:
@@ -36,8 +38,8 @@ def clone_repository(repository_url: str, target: str, branch: str) -> Repo:
     return repository
 
 
-def push_branch(path: str, branch: str, commit_msg="Initial commit") -> None:
-    logger.info(f"path: {path}, branch: {branch}, commit_msg: {commit_msg}")
-    subprocess.run(["git", "add", "."], cwd=path)
-    subprocess.run(["git", "commit", "-m", commit_msg], cwd=path)
-    subprocess.run(["git", "push", "--set-upstream", "origin", branch], cwd=path)
+def push_branch(repository: Repo, branch: str, commit_msg="Initial commit") -> None:
+    logger.info(f"{repository=}, {branch=}, {commit_msg=}")
+    repository.git.add(["."])
+    repository.git.commit(["-m", commit_msg])
+    repository.git.push(["--set-upstream", "origin", branch])

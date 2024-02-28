@@ -37,10 +37,7 @@ def test_checkout_branch_exception(mock_repository, mocker):
         "checkout", error_message
     )
 
-    with patch.object(logging, "info"), pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(
+        RuntimeError, match=f"An error occurred while checking out {main_branch}"
+    ):
         checkout_branch(mock_repository, main_branch)
-
-    expected_error = f"An error occurred while checking out {main_branch}:"
-    actual_error = str(exc_info.value)
-    assert expected_error in actual_error
-    assert error_message in actual_error

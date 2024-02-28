@@ -40,7 +40,7 @@ def create_repository(
         ) from e
 
 
-def does_repo_exist(name: str, g: Github) -> bool:
+def repo_exist(name: str, g: Github) -> bool:
     try:
         g.get_repo(name)
         return True

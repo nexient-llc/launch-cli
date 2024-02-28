@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--name",
     required=True,
-    help="(Required) Name of the service repository to run the terragrunt command against.",
+    help="Name of the service repository to run the terragrunt command against.",
 )
 @click.option(
     "--git-token",
     default=os.environ.get("GITHUB_TOKEN", None),
     required=True,
-    help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
+    help="The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
 @click.option(
     "--commit-sha",
@@ -115,6 +115,8 @@ def plan(
 
     if dry_run:
         click.secho("Performing a dry run, nothing will be updated", fg="yellow")
+        # TODO: add a dry run for terragrunt plan
+        return
 
     g = get_github_instance()
     service_repo = g.get_repo(f"{organization}/{name}")
@@ -125,11 +127,10 @@ def plan(
             repository_url=service_repo.clone_url,
             branch=commit_sha,
         )
-        checkout_branch(
-            repository=service_repo,
-            main_branch=commit_sha,
-        )
     else:
+        if not Path(f"{path}/{name}").exists():
+            click.secho(f"Error: Path {path}/{name} does not exist.", fg="red")
+            return
         service_repo = Repo(f"{path}/{name}")
 
     if not skip_generation:
@@ -169,13 +170,13 @@ def plan(
 @click.option(
     "--name",
     required=True,
-    help="(Required) Name of the service repository to run the terragrunt command against.",
+    help="Name of the service repository to run the terragrunt command against.",
 )
 @click.option(
     "--git-token",
     default=os.environ.get("GITHUB_TOKEN", None),
     required=True,
-    help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
+    help="The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
 @click.option(
     "--commit-sha",
@@ -261,6 +262,8 @@ def apply(
 
     if dry_run:
         click.secho("Performing a dry run, nothing will be updated", fg="yellow")
+        # TODO: add a dry run for terragrunt apply
+        return
 
     g = get_github_instance()
     service_repo = g.get_repo(f"{organization}/{name}")
@@ -271,11 +274,10 @@ def apply(
             repository_url=service_repo.clone_url,
             branch=commit_sha,
         )
-        checkout_branch(
-            repository=service_repo,
-            main_branch=commit_sha,
-        )
     else:
+        if not Path(f"{path}/{name}").exists():
+            click.secho(f"Error: Path {path}/{name} does not exist.", fg="red")
+            return
         service_repo = Repo(f"{path}/{name}")
 
     if not skip_generation:
@@ -315,13 +317,13 @@ def apply(
 @click.option(
     "--name",
     required=True,
-    help="(Required) Name of the service repository to run the terragrunt command against.",
+    help="Name of the service repository to run the terragrunt command against.",
 )
 @click.option(
     "--git-token",
     default=os.environ.get("GITHUB_TOKEN", None),
     required=True,
-    help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
+    help="The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
 @click.option(
     "--commit-sha",
@@ -407,6 +409,8 @@ def destroy(
 
     if dry_run:
         click.secho("Performing a dry run, nothing will be updated", fg="yellow")
+        # TODO: add a dry run for terragrunt destroy
+        return
 
     g = get_github_instance()
     service_repo = g.get_repo(f"{organization}/{name}")
@@ -417,11 +421,10 @@ def destroy(
             repository_url=service_repo.clone_url,
             branch=commit_sha,
         )
-        checkout_branch(
-            repository=service_repo,
-            main_branch=commit_sha,
-        )
     else:
+        if not Path(f"{path}/{name}").exists():
+            click.secho(f"Error: Path {path}/{name} does not exist.", fg="red")
+            return
         service_repo = Repo(f"{path}/{name}")
 
     if not skip_generation:
