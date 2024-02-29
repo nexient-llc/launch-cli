@@ -173,3 +173,5 @@ components/
 
 # Devcontainer
 .devcontainer
+# Finder
+.DS_Store
