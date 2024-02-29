@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 def resolve_dependencies(path: pathlib.Path):
     """Resolves nested dependencies for a Helm chart."""
     try:
-        logger.debug(f"Resolving Helm dependencies in {path}.")
-        resolve_helm_dependencies(helm_directory=path)
+        logger.info(f"Resolving Helm dependencies in {path}.")
+        resolve_helm_dependencies(helm_directory=path, global_dependencies={})
     except Exception as e:
         logger.exception("A failure occurred while resolving Helm dependencies.")
