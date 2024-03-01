@@ -9,7 +9,7 @@ from launch.service.common import write_text
 
 
 def test_write_text_json(fakedata):
-    serialized_data = json.dumps(fakedata["copy_and_render"]["context_data"])
+    serialized_data = json.dumps(fakedata["copy_and_render"]["context_data"], indent=4)
     test_path = MagicMock(spec=Path)
     test_path.write_text.return_value = MagicMock()
     write_text(

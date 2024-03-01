@@ -152,7 +152,7 @@ def create(
         platform_data=input_data["platform"],
     )
     input_data["platform"] = copy_properties_files(
-        dest_base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
+        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
         platform_data=input_data["platform"],
     )
     write_text(
@@ -247,6 +247,12 @@ def update(
     repository = g.get_repo(f"{organization}/{name}")
 
     if not skip_git:
+        if Path(service_path).exists():
+            click.secho(
+                f"Service repo {service_path} already exist locally. Please remove this dir or add the --skip-git flag to skip cloning.",
+                fg="red",
+            )
+            return
         repository = clone_repository(
             repository_url=repository.clone_url, target=name, branch=main_branch
         )
@@ -269,7 +275,7 @@ def update(
         platform_data=input_data["platform"],
     )
     input_data["platform"] = copy_properties_files(
-        dest_base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
+        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
         platform_data=input_data["platform"],
     )
     write_text(
@@ -327,6 +333,13 @@ def generate(
     singlerun_path = f"{work_dir}/{name}{CODE_GENERATION_DIR_SUFFIX}"
     service_path = f"{Path.cwd()}/{name}"
 
+    if Path(singlerun_path).exists():
+        click.secho(
+            f"Generation repo {singlerun_path} already exist locally. Please remove this directory or run launch service cleanup.",
+            fg="red",
+        )
+        return
+
     g = get_github_instance()
     repo = g.get_repo(f"{organization}/{name}")
 
@@ -336,14 +349,23 @@ def generate(
             target=f"{work_dir}/{name}",
             branch=service_branch,
         )
-        clone_repository(
-            repository_url=input_data["skeleton"]["url"],
-            target=singlerun_path,
-            branch=input_data["skeleton"]["tag"],
-        )
+    else:
+        if not Path(service_path).exists():
+            click.secho(
+                f"Service repo {service_path} does not exist locally. Please remove the --skip-git flag to clone and continue generation.",
+                fg="red",
+            )
+            return
 
     with open(f"{work_dir}/{name}/.launch_config", "r") as f:
         input_data = json.load(f)
+        input_data = input_data_validation(input_data)
+
+    clone_repository(
+        repository_url=input_data["skeleton"]["url"],
+        target=singlerun_path,
+        branch=input_data["skeleton"]["tag"],
+    )
 
     shutil.copytree(
         f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}",

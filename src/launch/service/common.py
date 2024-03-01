@@ -30,10 +30,7 @@ def create_directories(
 
 
 def copy_properties_files(
-    platform_data: dict,
-    base_path: Path = Path(""),
-    dest_base_path: Path = Path(""),
-    current_path="platform",
+    base_path: Path, platform_data: dict, current_path: Path = Path("platform")
 ) -> dict:
     if isinstance(platform_data, dict):
         for key, value in platform_data.items():
@@ -41,19 +38,15 @@ def copy_properties_files(
                 copy_properties_files(
                     base_path=base_path,
                     platform_data=value,
-                    current_path=Path(current_path) / key,
-                    dest_base_path=dest_base_path,
+                    current_path=current_path / Path(key),
                 )
             elif key == "properties_file":
-                dest_path = Path(base_path) / current_path
+                dest_path = base_path / current_path
                 dest_path.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Copying {base_path}/{value} to {dest_path}")
+                shutil.copy(base_path / Path(value), dest_path)
 
-                logger.info(
-                    f"Copying {base_path}/{value} to {dest_base_path}{dest_path}"
-                )
-                shutil.copy(base_path / value, dest_base_path / dest_path)
-                relative_path = str(dest_path).removeprefix(f"{base_path}/")
-
+                relative_path = str(dest_path).removeprefix(base_path)
                 platform_data[
                     key
                 ] = f"{BUILD_DEPEPENDENCIES_DIR}/{relative_path}/{value.split('/')[-1]}"
@@ -153,11 +146,13 @@ def copy_and_render_templates(
             render_jinja_template(template_path, dir_path, file_name, context_data)
 
 
-def write_text(path: Path, data: dict, output_format: str = "json") -> None:
+def write_text(
+    path: Path, data: dict, output_format: str = "json", indent: int = 4
+) -> None:
     if output_format == "json":
-        serialized_data = json.dumps(data)
+        serialized_data = json.dumps(data, indent=indent)
     elif output_format == "yaml":
-        serialized_data = yaml.dump(data)
+        serialized_data = yaml.dump(data, indent=indent)
     else:
         message = f"Unsupported output format: {output_format}"
         logger.error(message)
@@ -169,9 +164,11 @@ def write_text(path: Path, data: dict, output_format: str = "json") -> None:
 def input_data_validation(input_data: dict) -> dict:
     if not "skeleton" in input_data:
         input_data["skeleton"]: dict[str, str] = {}
-    if not "url" in input_data["skeleton"]:
+    if not "url" in input_data["skeleton"] or not input_data["skeleton"]["url"]:
+        logger.info(f"No skeleton url provided, using default: {SERVICE_SKELETON}")
         input_data["skeleton"]["url"] = SERVICE_SKELETON
-    if not "tag" in input_data["skeleton"]:
-        input_data["skeleton"]["url"] = SKELETON_BRANCH
+    if not "tag" in input_data["skeleton"] or not input_data["skeleton"]["tag"]:
+        logger.info(f"No skeleton tag provided, using default: {SKELETON_BRANCH}")
+        input_data["skeleton"]["tag"] = SKELETON_BRANCH
 
     return input_data

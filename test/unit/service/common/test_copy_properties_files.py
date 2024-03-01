@@ -1,68 +1,46 @@
+import json
+import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from launch.service.common import BUILD_DEPEPENDENCIES_DIR, copy_properties_files
+from launch.service.common import copy_properties_files
 
 
-@pytest.fixture
-def platform_data():
-    return {
-        "platform": {
-            "componentA": {
-                "properties_file": "config/componentA.properties",
-            },
-            "componentB": {
-                "subcomponentB1": {
-                    "properties_file": "config/subcomponentB1.properties",
-                },
-            },
-        },
-        "base_path": "/path/to/source",
-        "dest_base_path": "/path/to/dest/",
-    }
-
-
-def test_copy_properties_files(platform_data):
-    base_path = platform_data["base_path"]
-    dest_base_path = platform_data["dest_base_path"]
-
-    with patch("launch.service.common.shutil.copy") as mock_copy, patch(
-        "pathlib.Path.mkdir"
-    ) as mock_mkdir:
-        result = copy_properties_files(
-            platform_data=platform_data["platform"],
-            base_path=base_path,
-            dest_base_path=dest_base_path,
+def test_copy_properties_files_from_nested_dict(fakedata):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        base_path = temp_dir
+        temp_properties_file = Path(temp_dir) / "temp.properties"
+        temp_properties_file.write_text("some properties")
+        fakedata["service"]["sandbox"]["us-east-2"]["properties_file"] = str(
+            temp_properties_file
         )
+        copy_properties_files(base_path, fakedata)
 
-        expected_mkdir_calls = [
-            call(parents=True, exist_ok=True),
-            call(parents=True, exist_ok=True),
-        ]
-        mock_mkdir.assert_has_calls(expected_mkdir_calls, any_order=True)
+        dest_path = (
+            Path(temp_dir) / "platform/service/sandbox/us-east-2/temp.properties"
+        )
+        assert dest_path.exists()
 
-        expected_copy_calls = [
-            call(
-                f"{base_path}/config/componentA.properties",
-                f"{dest_base_path}/path/to/source/platform/componentA",
-            ),
-            call(
-                f"{base_path}/config/subcomponentB1.properties",
-                f"{dest_base_path}/path/to/source/platform/componentB/subcomponentB1",
-            ),
-        ]
-        mock_copy.assert_has_calls(expected_copy_calls, any_order=True)
 
-        expected_result = {
-            "componentA": {
-                "properties_file": f"{BUILD_DEPEPENDENCIES_DIR}/platform/componentA/componentA.properties",
-            },
-            "componentB": {
-                "subcomponentB1": {
-                    "properties_file": f"{BUILD_DEPEPENDENCIES_DIR}/platform/componentB/subcomponentB1/subcomponentB1.properties",
-                },
-            },
-        }
-        assert result == expected_result
+def test_non_dict_platform_data():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        base_path = temp_dir
+        platform_data = []
+        copy_properties_files(base_path, platform_data)
+
+        assert len(list(Path(temp_dir).glob("**/*"))) == 0
+
+
+def test_properties_file_in_root_dict():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        base_path = temp_dir
+        temp_properties_file = Path(temp_dir) / "root.properties"
+        temp_properties_file.write_text("root properties")
+
+        platform_data = {"properties_file": str(temp_properties_file)}
+
+        copy_properties_files(base_path, platform_data)
+
+        dest_path = Path(temp_dir) / "platform/root.properties"
+        assert dest_path.exists()
