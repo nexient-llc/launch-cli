@@ -17,17 +17,19 @@ def mock_repository():
 def test_checkout_new_branch(mock_repository, mocker):
     init_branch = "development"
     with patch.object(logging, "info") as mock_log_info:
-        checkout_branch(mock_repository, "main", init_branch, new_branch=True)
+        checkout_branch(
+            repository=mock_repository, target_branch=init_branch, new_branch=True
+        )
 
-    mock_repository.git.checkout.assert_called_once_with("-b", init_branch)
+    mock_repository.git.checkout.assert_called_once_with(["-b", init_branch])
 
 
 def test_checkout_existing_branch(mock_repository, mocker):
     main_branch = "main"
     with patch.object(logging, "info") as mock_log_info:
-        checkout_branch(mock_repository, main_branch)
+        checkout_branch(repository=mock_repository, target_branch=main_branch)
 
-    mock_repository.git.checkout.assert_called_once_with(main_branch)
+    mock_repository.git.checkout.assert_called_once_with([main_branch])
 
 
 def test_checkout_branch_exception(mock_repository, mocker):

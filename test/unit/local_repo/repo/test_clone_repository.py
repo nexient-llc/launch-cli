@@ -51,5 +51,5 @@ def test_clone_repository_error(mocker, test_fakedata):
         )
 
     url = test_fakedata["repository_url"]
-    expected_error = f"An error occurred while cloning the repository: {url}"
+    expected_error = f"Error occurred while cloning the repository from {url}"
     assert str(exc_info.value) == expected_error

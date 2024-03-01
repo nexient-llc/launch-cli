@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import IO, Any
 
 import click
+from git import Repo
 
 from launch import (
     BUILD_DEPEPENDENCIES_DIR,
@@ -33,7 +34,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--organization",
     default=GITHUB_ORG_NAME,
-    help="GitHub organization containing your repository. Defaults to the nexient-llc organization.",
+    help=f"GitHub organization containing your repository. Defaults to the {GITHUB_ORG_NAME} organization.",
 )
 @click.option("--name", required=True, help="Name of the service to  be created.")
 @click.option(
@@ -115,7 +116,7 @@ def create(
 
     g = get_github_instance()
 
-    if repo_exist(name=name, g=g):
+    if repo_exist(name=f"{organization}/{name}", g=g):
         click.secho(
             "Repo already exists remotely. Please use launch service update, to update a service.",
             fg="red",
@@ -142,8 +143,7 @@ def create(
     )
     checkout_branch(
         repository=repository,
-        init_branch=remote_branch,
-        main_branch=main_branch,
+        target_branch=remote_branch,
         new_branch=True,
     )
 
@@ -167,7 +167,7 @@ def create(
 @click.option(
     "--organization",
     default=GITHUB_ORG_NAME,
-    help="GitHub organization containing your repository. Defaults to the nexient-llc organization.",
+    help=f"GitHub organization containing your repository. Defaults to the {GITHUB_ORG_NAME} organization.",
 )
 @click.option("--name", required=True, help="Name of the service to  be created.")
 @click.option(
@@ -237,26 +237,26 @@ def update(
 
     g = get_github_instance()
 
-    if not repo_exist(name=name, g=g):
+    if not repo_exist(name=f"{organization}/{name}", g=g):
         click.secho(
             "Repo does not exist remotely. Please use launch service create to create a new service.",
             fg="red",
         )
         return
 
-    service_repo = g.get_repo(f"{organization}/{name}")
+    repository = g.get_repo(f"{organization}/{name}")
 
     if not skip_git:
         repository = clone_repository(
-            repository_url=service_repo.clone_url, target=name, branch=main_branch
+            repository_url=repository.clone_url, target=name, branch=main_branch
         )
         checkout_branch(
             repository=repository,
-            init_branch=remote_branch,
-            main_branch=main_branch,
+            target_branch=remote_branch,
             new_branch=True,
         )
     else:
+        repository = Repo(service_path)
         try:
             shutil.rmtree(f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}")
         except FileNotFoundError:
