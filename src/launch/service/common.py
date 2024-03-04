@@ -44,7 +44,9 @@ def copy_properties_files(
                 dest_path = base_path / current_path
                 dest_path.mkdir(parents=True, exist_ok=True)
                 logger.info(f"Copying {base_path}/{value} to {dest_path}")
-                shutil.copy(base_path / Path(value), dest_path)
+                shutil.copy(
+                    base_path / Path(value), dest_path / Path("terraform.tfvars")
+                )
 
                 relative_path = str(dest_path).removeprefix(base_path)
                 platform_data[
