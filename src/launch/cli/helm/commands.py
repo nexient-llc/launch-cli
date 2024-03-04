@@ -29,4 +29,6 @@ def resolve_dependencies(path: pathlib.Path):
         logger.info(f"Resolving Helm dependencies in {path}.")
         resolve_helm_dependencies(helm_directory=path, global_dependencies={})
     except Exception as e:
-        logger.exception("A failure occurred while resolving Helm dependencies.")
+        logger.exception(
+            f"A failure occurred while resolving Helm dependencies. Error: {e}"
+        )

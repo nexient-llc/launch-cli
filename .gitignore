@@ -173,5 +173,6 @@ components/
 
 # Devcontainer
 .devcontainer
+.vscode/settings.json
 # Finder
 .DS_Store

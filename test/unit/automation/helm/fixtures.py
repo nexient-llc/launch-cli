@@ -126,7 +126,7 @@ def chartfile_local_deps(
 ):
     simple_chart_no_deps["dependencies"] = local_dependencies
     chart_file = helm_directory.joinpath("Chart.yaml")
-    json.dump(simple_chart_no_deps, open(chart_file, "w"))
+    chart_file.write_text(json.dumps(simple_chart_no_deps))
     return chart_file
 
 
@@ -138,7 +138,7 @@ def chartfile_remote_deps(
 ):
     simple_chart_no_deps["dependencies"] = remote_dependencies
     chart_file = helm_directory.joinpath("Chart.yaml")
-    json.dump(simple_chart_no_deps, open(chart_file, "w"))
+    chart_file.write_text(json.dumps(simple_chart_no_deps))
     return chart_file
 
 
@@ -150,5 +150,5 @@ def chartfile_mixed_deps(
 ):
     simple_chart_no_deps["dependencies"] = mixed_dependencies
     chart_file = helm_directory.joinpath("Chart.yaml")
-    json.dump(simple_chart_no_deps, open(chart_file, "w"))
+    chart_file.write_text(json.dumps(simple_chart_no_deps))
     return chart_file

@@ -22,8 +22,9 @@ def resolve_dependencies(
     top_level_chart = helm_directory.joinpath("Chart.yaml")
     logger.debug(f"Looking for Chart.yaml in {helm_directory}")
     if not top_level_chart.exists():
-        logger.debug(f"No Chart.yaml found in {helm_directory}")
-        raise FileNotFoundError(f"No Chart.yaml found in {helm_directory}")
+        fnf_message = f"No Chart.yaml found in {helm_directory}"
+        logger.debug(fnf_message)
+        raise FileNotFoundError(fnf_message)
 
     dependencies = extract_dependencies_from_chart(chart_file=top_level_chart)
     logger.debug(f"Found {len(dependencies)} dependencies in {helm_directory}")
@@ -35,12 +36,13 @@ def resolve_dependencies(
                 f"Remembering dependency {dependency['name']} with version {dependency['version']}."
             )
         elif global_dependencies[dependency["name"]] != dependency["version"]:
-            logger.exception(
+            conflict_message = (
                 f"Dependency {dependency['name']} has conflicting versions: "
                 f"{global_dependencies[dependency['name']]} and {dependency['version']}. "
                 "You must resolve this conflict before continuing."
             )
-            sys.exit(1)
+            logger.exception(conflict_message)
+            RuntimeError(conflict_message)
         else:
             logger.info(
                 f"Dependency {dependency['name']} already known with version {dependency['version']}."
@@ -107,7 +109,7 @@ def resolve_next_layer_dependencies(
     for dependency in dependencies:
         # Discover the dependency archives -- there should be one for each version, but only ever one version included as a dependency.
         dependency_archives = discover_files(
-            helm_directory.joinpath("charts"), filename_partial=f"{dependency['name']}"
+            helm_directory.joinpath("charts"), filename_partial=dependency["name"]
         )
         logger.debug(f"Found {len(dependency_archives)} archives.")
 

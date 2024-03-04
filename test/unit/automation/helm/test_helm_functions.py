@@ -1,3 +1,4 @@
+import logging
 import pathlib
 import subprocess
 from test.unit.automation.helm.fixtures import (
@@ -39,15 +40,6 @@ def helm_add_repo_call(dependencies: list[dict[str, str]]):
             )
             helm_add_repo_calls.append(this_call.call_args)
     return helm_add_repo_calls
-
-
-def call_list_from_call_strings(call_strings: list[str]):
-    call_list = []
-    for call in call_strings:
-        this_call = mock.Mock()
-        this_call.call_args = mock.call(call)
-        call_list.append(this_call.call_args)
-    return call_list
 
 
 def helm_dep_archives_from_dependencies(dependencies: list[dict[str, str]]):
@@ -101,43 +93,30 @@ def test_add_dependency_repositories_local_dependency(mocker, local_dependencies
 
 
 def test_resolve_next_layer_dependencies_empty_dependencies(
-    mocker, empty_dependencies, helm_directory, empty_global_dependencies
+    mocker, caplog, empty_dependencies, helm_directory, empty_global_dependencies
 ):
     mock_discover_files = mocker.patch(
         "src.launch.automation.helm.functions.discover_files"
     )
-    mock_logger_debug = mocker.patch(
-        "src.launch.automation.helm.functions.logger.debug"
-    )
     global_dependencies = empty_global_dependencies
     dependencies = empty_dependencies
-    mock_discover_files.return_value = helm_dep_archives_from_dependencies(dependencies)
-    resolve_next_layer_dependencies(dependencies, helm_directory, global_dependencies)
-    mock_logger_debug.assert_called_with(
-        f"Inspecting {len(dependencies)} dependencies for further dependencies."
-    )
+    dependency_archives = helm_dep_archives_from_dependencies(dependencies)
+    mock_discover_files.return_value = dependency_archives
+    with caplog.at_level(logging.DEBUG):
+        resolve_next_layer_dependencies(
+            dependencies, helm_directory, global_dependencies
+        )
+    assert len(caplog.records) > 0
+    assert f"Found {len(dependency_archives)} archives." not in caplog.text
+    assert f"Inspecting {len(dependencies)} dependencies" in caplog.text
     mock_discover_files.assert_not_called()
 
 
 def test_resolve_next_layer_dependencies_mixed_dependencies(
-    mocker, mixed_dependencies, helm_directory, empty_global_dependencies
+    mocker, caplog, mixed_dependencies, helm_directory, empty_global_dependencies
 ):
     # Create our list of mock archive paths
     dependency_archives = helm_dep_archives_from_dependencies(mixed_dependencies)
-
-    # Create our list of expected debug output strings
-    dependency_archives_debug_call_strings = []
-    debug_call_strings = []
-    for dependency_archive in dependency_archives:
-        dependency_archives_debug_call_strings.append(
-            f"Unpacking {dependency_archive} to {helm_directory.joinpath('charts')}".strip()
-        )
-    debug_call_strings = [
-        f"Inspecting {len(mixed_dependencies)} dependencies for further dependencies.",
-        f"Found {len(mixed_dependencies)} archives.",
-    ]
-    debug_call_strings.extend(dependency_archives_debug_call_strings)
-    debug_call_args_assertions = call_list_from_call_strings(debug_call_strings)
 
     # Create mock objects of the associated functions
     mock_resolve_dependencies = mocker.patch(
@@ -145,9 +124,6 @@ def test_resolve_next_layer_dependencies_mixed_dependencies(
     )
     mock_discover_files = mocker.patch(
         "src.launch.automation.helm.functions.discover_files"
-    )
-    mock_logger_debug = mocker.patch(
-        "src.launch.automation.helm.functions.logger.debug"
     )
     mock_unpack_archive = mocker.patch(
         "src.launch.automation.helm.functions.unpack_archive"
@@ -160,43 +136,20 @@ def test_resolve_next_layer_dependencies_mixed_dependencies(
     mock_unpack_archive.return_value = True
     mock_resolve_dependencies.return_value = None
 
-    # Call the function being tested
-    resolve_next_layer_dependencies(dependencies, helm_directory, global_dependencies)
-    # review outputs for expected results
-    mock_logger_debug.assert_has_calls(debug_call_args_assertions)
+    with caplog.at_level(logging.DEBUG):
+        resolve_next_layer_dependencies(
+            dependencies, helm_directory, global_dependencies
+        )
+    assert len(caplog.records) > 0
+    assert f"Found {len(dependency_archives)} archives." in caplog.text
+    assert f"Inspecting {len(dependencies)} dependencies" in caplog.text
 
 
 def test_resolve_dependencies_empty_global_empty_deps(
-    mocker, empty_dependencies, helm_directory, empty_global_dependencies
+    mocker, caplog, empty_dependencies, helm_directory, empty_global_dependencies
 ):
     dependencies = empty_dependencies
     global_dependencies = empty_global_dependencies
-    debug_call_strings = [
-        f"Looking for Chart.yaml in {helm_directory}",
-        f"Found {len(dependencies)} dependencies in {helm_directory}",
-    ]
-    debug_call_args_assertions = call_list_from_call_strings(debug_call_strings)
-
-    info_call_strings = []
-    exception_call_strings = []
-    for dep in dependencies:
-        if dep["name"] not in global_dependencies:
-            info_call_strings.append(
-                f"Remembering dependency {dep['name']} with version {dep['version']}."
-            )
-        elif global_dependencies[dep["name"]] != dep["version"]:
-            exception_call_strings.append(
-                f"Dependency {dep['name']} has conflicting versions: "
-                f"{global_dependencies[dep['name']]} and {dep['version']}. "
-                "You must resolve this conflict before continuing."
-            )
-        else:
-            info_call_strings.append(
-                f"Dependency {dep['name']} already known with version {dep['version']}."
-            )
-
-    info_call_args_assertions = call_list_from_call_strings(info_call_strings)
-    exception_call_args_assertions = call_list_from_call_strings(exception_call_strings)
 
     mock_chart_exists = mocker.patch("pathlib.Path.exists")
     mock_subprocess_call = mocker.patch("subprocess.call")
@@ -209,57 +162,27 @@ def test_resolve_dependencies_empty_global_empty_deps(
     mock_resolve_next_layer_dependencies = mocker.patch(
         "src.launch.automation.helm.functions.resolve_next_layer_dependencies"
     )
-    mock_logger_info = mocker.patch("src.launch.automation.helm.functions.logger.info")
-    mock_logger_debug = mocker.patch(
-        "src.launch.automation.helm.functions.logger.debug"
-    )
-    mock_logger_exception = mocker.patch(
-        "src.launch.automation.helm.functions.logger.exception"
-    )
     top_level_chart = helm_directory.joinpath("Chart.yaml")
 
     mock_chart_exists.return_value = True
+    mock_extract_dependencies_from_chart.return_value = dependencies
     mock_subprocess_call.return_value = True
     mock_resolve_next_layer_dependencies.return_value = None
     mock_add_dependency_repositories.return_value = None
-    resolve_dependencies(helm_directory, empty_global_dependencies)
+    with caplog.at_level(logging.DEBUG):
+        resolve_dependencies(helm_directory, global_dependencies)
+    assert f"Found {len(dependencies)} dependencies" in caplog.text
+    assert len(caplog.records) > 0
+    for record in caplog.records:
+        assert record.levelname != "EXCEPTION"
     mock_extract_dependencies_from_chart.assert_called_with(chart_file=top_level_chart)
-    mock_logger_debug.assert_has_calls(debug_call_args_assertions)
-    mock_logger_info.assert_has_calls(info_call_args_assertions)
-    mock_logger_exception.assert_has_calls(exception_call_args_assertions)
 
 
 def test_resolve_dependencies_empty_global_mixed_deps(
-    mocker, mixed_dependencies, helm_directory, empty_global_dependencies
+    mocker, caplog, mixed_dependencies, helm_directory, empty_global_dependencies
 ):
     dependencies = mixed_dependencies
     global_dependencies = empty_global_dependencies
-    debug_call_strings = [
-        f"Looking for Chart.yaml in {helm_directory}",
-        f"Found {len(dependencies)} dependencies in {helm_directory}",
-    ]
-    debug_call_args_assertions = call_list_from_call_strings(debug_call_strings)
-
-    info_call_strings = []
-    exception_call_strings = []
-    for dep in dependencies:
-        if dep["name"] not in global_dependencies:
-            info_call_strings.append(
-                f"Remembering dependency {dep['name']} with version {dep['version']}."
-            )
-        elif global_dependencies[dep["name"]] != dep["version"]:
-            exception_call_strings.append(
-                f"Dependency {dep['name']} has conflicting versions: "
-                f"{global_dependencies[dep['name']]} and {dep['version']}. "
-                "You must resolve this conflict before continuing."
-            )
-        else:
-            info_call_strings.append(
-                f"Dependency {dep['name']} already known with version {dep['version']}."
-            )
-
-    info_call_args_assertions = call_list_from_call_strings(info_call_strings)
-    exception_call_args_assertions = call_list_from_call_strings(exception_call_strings)
 
     mock_chart_exists = mocker.patch("pathlib.Path.exists")
     mock_subprocess_call = mocker.patch("subprocess.call")
@@ -272,13 +195,6 @@ def test_resolve_dependencies_empty_global_mixed_deps(
     mock_resolve_next_layer_dependencies = mocker.patch(
         "src.launch.automation.helm.functions.resolve_next_layer_dependencies"
     )
-    mock_logger_info = mocker.patch("src.launch.automation.helm.functions.logger.info")
-    mock_logger_debug = mocker.patch(
-        "src.launch.automation.helm.functions.logger.debug"
-    )
-    mock_logger_exception = mocker.patch(
-        "src.launch.automation.helm.functions.logger.exception"
-    )
     top_level_chart = helm_directory.joinpath("Chart.yaml")
 
     mock_extract_dependencies_from_chart.return_value = dependencies
@@ -286,45 +202,21 @@ def test_resolve_dependencies_empty_global_mixed_deps(
     mock_subprocess_call.return_value = True
     mock_resolve_next_layer_dependencies.return_value = None
     mock_add_dependency_repositories.return_value = None
-
-    resolve_dependencies(helm_directory, empty_global_dependencies)
+    with caplog.at_level(logging.DEBUG):
+        resolve_dependencies(helm_directory, global_dependencies)
+    assert len(caplog.records) > 0
+    assert f"Found {len(dependencies)} dependencies" in caplog.text
+    assert "already known" not in caplog.text
+    for record in caplog.records:
+        assert record.levelname != "EXCEPTION"
     mock_extract_dependencies_from_chart.assert_called_with(chart_file=top_level_chart)
-    mock_logger_debug.assert_has_calls(debug_call_args_assertions)
-    mock_logger_info.assert_has_calls(info_call_args_assertions)
-    mock_logger_exception.assert_has_calls(exception_call_args_assertions)
 
 
 def test_resolve_dependencies_eq_global_mixed_deps(
-    mocker, mixed_dependencies, helm_directory, eq_global_dependencies
+    mocker, caplog, mixed_dependencies, helm_directory, eq_global_dependencies
 ):
     dependencies = mixed_dependencies
     global_dependencies = eq_global_dependencies
-    debug_call_strings = [
-        f"Looking for Chart.yaml in {helm_directory}",
-        f"Found {len(dependencies)} dependencies in {helm_directory}",
-    ]
-    debug_call_args_assertions = call_list_from_call_strings(debug_call_strings)
-
-    info_call_strings = []
-    exception_call_strings = []
-    for dep in dependencies:
-        if dep["name"] not in global_dependencies:
-            info_call_strings.append(
-                f"Remembering dependency {dep['name']} with version {dep['version']}."
-            )
-        elif global_dependencies[dep["name"]] != dep["version"]:
-            exception_call_strings.append(
-                f"Dependency {dep['name']} has conflicting versions: "
-                f"{global_dependencies[dep['name']]} and {dep['version']}. "
-                "You must resolve this conflict before continuing."
-            )
-        else:
-            info_call_strings.append(
-                f"Dependency {dep['name']} already known with version {dep['version']}."
-            )
-
-    info_call_args_assertions = call_list_from_call_strings(info_call_strings)
-    exception_call_args_assertions = call_list_from_call_strings(exception_call_strings)
 
     mock_chart_exists = mocker.patch("pathlib.Path.exists")
     mock_subprocess_call = mocker.patch("subprocess.call")
@@ -337,13 +229,6 @@ def test_resolve_dependencies_eq_global_mixed_deps(
     mock_resolve_next_layer_dependencies = mocker.patch(
         "src.launch.automation.helm.functions.resolve_next_layer_dependencies"
     )
-    mock_logger_info = mocker.patch("src.launch.automation.helm.functions.logger.info")
-    mock_logger_debug = mocker.patch(
-        "src.launch.automation.helm.functions.logger.debug"
-    )
-    mock_logger_exception = mocker.patch(
-        "src.launch.automation.helm.functions.logger.exception"
-    )
     top_level_chart = helm_directory.joinpath("Chart.yaml")
 
     mock_extract_dependencies_from_chart.return_value = dependencies
@@ -351,49 +236,27 @@ def test_resolve_dependencies_eq_global_mixed_deps(
     mock_subprocess_call.return_value = True
     mock_resolve_next_layer_dependencies.return_value = None
     mock_add_dependency_repositories.return_value = None
-
-    resolve_dependencies(helm_directory, global_dependencies)
+    with caplog.at_level(logging.DEBUG):
+        resolve_dependencies(helm_directory, global_dependencies)
+    assert len(caplog.records) > 0
+    assert f"Found {len(dependencies)} dependencies" in caplog.text
+    assert "already known" in caplog.text
+    for record in caplog.records:
+        assert record.levelname != "EXCEPTION"
     mock_extract_dependencies_from_chart.assert_called_with(chart_file=top_level_chart)
-    mock_logger_debug.assert_has_calls(debug_call_args_assertions)
-    mock_logger_info.assert_has_calls(info_call_args_assertions)
-    mock_logger_exception.assert_has_calls(exception_call_args_assertions)
 
 
 def test_resolve_dependencies_conflict_global_mixed_deps(
-    mocker, mixed_dependencies, helm_directory, conflict_global_dependencies
+    mocker, caplog, mixed_dependencies, helm_directory, conflict_global_dependencies
 ):
     dependencies = mixed_dependencies
     global_dependencies = conflict_global_dependencies
-    debug_call_strings = [
-        f"Looking for Chart.yaml in {helm_directory}",
-        f"Found {len(dependencies)} dependencies in {helm_directory}",
-    ]
-    debug_call_args_assertions = call_list_from_call_strings(debug_call_strings)
-
-    info_call_strings = []
-    exception_call_strings = []
-    for dep in dependencies:
-        if dep["name"] not in global_dependencies:
-            info_call_strings.append(
-                f"Remembering dependency {dep['name']} with version {dep['version']}."
-            )
-        elif global_dependencies[dep["name"]] != dep["version"]:
-            exception_call_strings.append(
-                f"Dependency {dep['name']} has conflicting versions: "
-                f"{global_dependencies[dep['name']]} and {dep['version']}. "
-                "You must resolve this conflict before continuing."
-            )
-        else:
-            info_call_strings.append(
-                f"Dependency {dep['name']} already known with version {dep['version']}."
-            )
-
-    info_call_args_assertions = call_list_from_call_strings(info_call_strings)
-    exception_call_args_assertions = call_list_from_call_strings(exception_call_strings)
 
     mock_chart_exists = mocker.patch("pathlib.Path.exists")
     mock_subprocess_call = mocker.patch("subprocess.call")
-    mock_exit = mocker.patch("sys.exit")
+    mock_raise_exception = mocker.patch(
+        "src.launch.automation.helm.functions.RuntimeError"
+    )
     mock_extract_dependencies_from_chart = mocker.patch(
         "src.launch.automation.helm.functions.extract_dependencies_from_chart"
     )
@@ -403,13 +266,6 @@ def test_resolve_dependencies_conflict_global_mixed_deps(
     mock_resolve_next_layer_dependencies = mocker.patch(
         "src.launch.automation.helm.functions.resolve_next_layer_dependencies"
     )
-    mock_logger_info = mocker.patch("src.launch.automation.helm.functions.logger.info")
-    mock_logger_debug = mocker.patch(
-        "src.launch.automation.helm.functions.logger.debug"
-    )
-    mock_logger_exception = mocker.patch(
-        "src.launch.automation.helm.functions.logger.exception"
-    )
     top_level_chart = helm_directory.joinpath("Chart.yaml")
 
     mock_extract_dependencies_from_chart.return_value = dependencies
@@ -418,9 +274,10 @@ def test_resolve_dependencies_conflict_global_mixed_deps(
     mock_resolve_next_layer_dependencies.return_value = None
     mock_add_dependency_repositories.return_value = None
 
+    caplog.set_level(logging.DEBUG)
     resolve_dependencies(helm_directory, global_dependencies)
+    assert len(caplog.records) > 0
+    assert f"Found {len(dependencies)} dependencies" in caplog.text
+    assert "conflicting versions" in caplog.text
     mock_extract_dependencies_from_chart.assert_called_with(chart_file=top_level_chart)
-    mock_logger_debug.assert_has_calls(debug_call_args_assertions)
-    mock_logger_info.assert_has_calls(info_call_args_assertions)
-    mock_logger_exception.assert_has_calls(exception_call_args_assertions)
-    mock_exit.assert_called_once_with(1)
+    mock_raise_exception.assert_called()
