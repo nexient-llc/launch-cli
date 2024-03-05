@@ -254,9 +254,6 @@ def test_resolve_dependencies_conflict_global_mixed_deps(
 
     mock_chart_exists = mocker.patch("pathlib.Path.exists")
     mock_subprocess_call = mocker.patch("subprocess.call")
-    mock_raise_exception = mocker.patch(
-        "src.launch.automation.helm.functions.RuntimeError"
-    )
     mock_extract_dependencies_from_chart = mocker.patch(
         "src.launch.automation.helm.functions.extract_dependencies_from_chart"
     )
@@ -274,10 +271,9 @@ def test_resolve_dependencies_conflict_global_mixed_deps(
     mock_resolve_next_layer_dependencies.return_value = None
     mock_add_dependency_repositories.return_value = None
 
-    caplog.set_level(logging.DEBUG)
-    resolve_dependencies(helm_directory, global_dependencies)
+    with caplog.at_level(logging.DEBUG):
+        with pytest.raises(RuntimeError, match="conflicting versions"):
+            resolve_dependencies(helm_directory, global_dependencies)
     assert len(caplog.records) > 0
     assert f"Found {len(dependencies)} dependencies" in caplog.text
-    assert "conflicting versions" in caplog.text
     mock_extract_dependencies_from_chart.assert_called_with(chart_file=top_level_chart)
-    mock_raise_exception.assert_called()

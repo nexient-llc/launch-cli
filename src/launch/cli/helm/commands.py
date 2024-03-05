@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import sys
 
 import click
 
@@ -29,6 +30,5 @@ def resolve_dependencies(path: pathlib.Path):
         logger.info(f"Resolving Helm dependencies in {path}.")
         resolve_helm_dependencies(helm_directory=path, global_dependencies={})
     except Exception as e:
-        logger.exception(
-            f"A failure occurred while resolving Helm dependencies. Error: {e}"
-        )
+        logger.exception(f"A failure occurred while resolving Helm dependencies.")
+        sys.exit(1)

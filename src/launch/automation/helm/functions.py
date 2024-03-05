@@ -1,7 +1,6 @@
 import logging
 import pathlib
 import subprocess
-import sys
 
 from launch.automation.common.functions import discover_files, load_yaml, unpack_archive
 
@@ -42,7 +41,7 @@ def resolve_dependencies(
                 "You must resolve this conflict before continuing."
             )
             logger.exception(conflict_message)
-            RuntimeError(conflict_message)
+            raise RuntimeError(conflict_message)
         else:
             logger.info(
                 f"Dependency {dependency['name']} already known with version {dependency['version']}."
