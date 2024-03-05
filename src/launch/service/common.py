@@ -51,7 +51,7 @@ def copy_properties_files(
                 relative_path = str(dest_path).removeprefix(base_path)
                 platform_data[
                     key
-                ] = f"{BUILD_DEPEPENDENCIES_DIR}/{relative_path}/{value.split('/')[-1]}"
+                ] = f"{BUILD_DEPEPENDENCIES_DIR}/{relative_path}/terraform.tfvars"
     elif isinstance(platform_data, list):
         pass
     return platform_data

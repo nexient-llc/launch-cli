@@ -108,34 +108,3 @@ def make_configure() -> None:
         subprocess.run(["make", "configure"], check=True)
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"An error occurred: {str(e)}") from e
-
-
-def deploy_remote_state(provider_config: dict) -> None:
-    run_list = ["make"]
-
-    if provider_config["az"].get("name_prefix"):
-        run_list.append(f"NAME_PREFIX={provider_config['az'].get('name_prefix')}")
-    if provider_config["az"].get("region"):
-        run_list.append(f"REGION={provider_config['az'].get('region')}")
-    if provider_config["az"].get("environment"):
-        run_list.append(f"ENVIRONMENT={provider_config['az'].get('environment')}")
-    if provider_config["az"].get("env_instance"):
-        run_list.append(f"ENV_INSTANCE={provider_config['az'].get('env_instance')}")
-    if provider_config["az"].get("container_name"):
-        run_list.append(f"CONTAINER_NAME={provider_config['az'].get('container_name')}")
-    if provider_config["az"].get("storage_account_name"):
-        run_list.append(
-            f"STORAGE_ACCOUNT_NAME={provider_config['az'].get('storage_account_name')}"
-        )
-    if provider_config["az"].get("resource_group_name"):
-        run_list.append(
-            f"RESOURCE_GROUP_NAME={provider_config['az'].get('resource_group_name')}"
-        )
-
-    run_list.append("terragrunt/remote_state/azure")
-
-    logger.info(f"Running {run_list}")
-    try:
-        subprocess.run(run_list, check=True)
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"An error occurred: {str(e)}") from e
