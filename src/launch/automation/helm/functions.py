@@ -31,7 +31,7 @@ def resolve_dependencies(
     for dependency in dependencies:
         if dependency["name"] not in global_dependencies:
             global_dependencies[dependency["name"]] = dependency["version"]
-            logger.info(
+            logger.debug(
                 f"Remembering dependency {dependency['name']} with version {dependency['version']}."
             )
         elif global_dependencies[dependency["name"]] != dependency["version"]:
@@ -43,7 +43,7 @@ def resolve_dependencies(
             logger.exception(conflict_message)
             raise RuntimeError(conflict_message)
         else:
-            logger.info(
+            logger.debug(
                 f"Dependency {dependency['name']} already known with version {dependency['version']}."
             )
     if not dry_run:
