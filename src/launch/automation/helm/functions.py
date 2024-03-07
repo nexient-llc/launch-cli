@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def resolve_dependencies(
-    helm_directory: pathlib.Path, global_dependencies: dict[str, str]
+    helm_directory: pathlib.Path, global_dependencies: dict[str, str], dry_run: bool
 ) -> None:
     """Recursive function to resolve Helm dependencies based on Chart.yaml file in provided path.
 
@@ -46,12 +46,16 @@ def resolve_dependencies(
             logger.info(
                 f"Dependency {dependency['name']} already known with version {dependency['version']}."
             )
+    if not dry_run:
+        add_dependency_repositories(dependencies)
 
-    add_dependency_repositories(dependencies)
+        subprocess.call(["helm", "dep", "build", "."], cwd=helm_directory)
 
-    subprocess.call(["helm", "dep", "build", "."], cwd=helm_directory)
-
-    resolve_next_layer_dependencies(dependencies, helm_directory, global_dependencies)
+        resolve_next_layer_dependencies(
+            dependencies, helm_directory, global_dependencies, dry_run=dry_run
+        )
+    else:
+        logger.info("Dry run requested, skipping dependency recursion.")
 
 
 def extract_dependencies_from_chart(chart_file: pathlib.Path) -> list[dict[str, str]]:
@@ -95,6 +99,7 @@ def resolve_next_layer_dependencies(
     dependencies: list[dict[str, str]],
     helm_directory: pathlib.Path,
     global_dependencies: dict[str, str],
+    dry_run: bool,
 ) -> None:
     """Inspect any dependencies of the provided dependencies and resolve them.
 
@@ -120,4 +125,5 @@ def resolve_next_layer_dependencies(
             resolve_dependencies(
                 helm_directory.joinpath(f"charts/{dependency['name']}"),
                 global_dependencies,
+                dry_run=dry_run,
             )

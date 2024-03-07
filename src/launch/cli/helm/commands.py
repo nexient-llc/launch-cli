@@ -1,6 +1,5 @@
 import logging
 import pathlib
-import sys
 
 import click
 
@@ -24,11 +23,19 @@ logger = logging.getLogger(__name__)
     ),
     help="Path to a folder containing your Chart.yaml. Defaults to the current working directory.",
 )
-def resolve_dependencies(path: pathlib.Path):
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Simulate the execution of the command without making any changes.",
+)
+def resolve_dependencies(path: pathlib.Path, dry_run: bool):
     """Resolves nested dependencies for a Helm chart."""
     try:
-        logger.info(f"Resolving Helm dependencies in {path}.")
-        resolve_helm_dependencies(helm_directory=path, global_dependencies={})
+        click.secho(f"Resolving Helm dependencies in {path}.", fg="green")
+        resolve_helm_dependencies(
+            helm_directory=path, global_dependencies={}, dry_run=dry_run
+        )
     except Exception as e:
-        logger.exception(f"A failure occurred while resolving Helm dependencies.")
-        sys.exit(1)
+        click.secho(f"An error occurred while resolving Helm dependencies.", fg="red")
+        logger.exception(e)

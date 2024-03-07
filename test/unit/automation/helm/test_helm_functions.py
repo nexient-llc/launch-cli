@@ -66,7 +66,9 @@ def test_extract_dependencies_mixed(chartfile_mixed_deps, mixed_dependencies):
 
 def test_resolve_dependencies_raises_error_if_no_chart_yaml(tmp_path):
     with pytest.raises(FileNotFoundError):
-        resolve_dependencies(helm_directory=tmp_path, global_dependencies={})
+        resolve_dependencies(
+            helm_directory=tmp_path, global_dependencies={}, dry_run=False
+        )
 
 
 def test_add_remote_dependency_repositories(mocker, remote_dependencies):
@@ -104,7 +106,7 @@ def test_resolve_next_layer_dependencies_empty_dependencies(
     mock_discover_files.return_value = dependency_archives
     with caplog.at_level(logging.DEBUG):
         resolve_next_layer_dependencies(
-            dependencies, helm_directory, global_dependencies
+            dependencies, helm_directory, global_dependencies, dry_run=False
         )
     assert len(caplog.records) > 0
     assert f"Found {len(dependency_archives)} archives." not in caplog.text
@@ -138,7 +140,7 @@ def test_resolve_next_layer_dependencies_mixed_dependencies(
 
     with caplog.at_level(logging.DEBUG):
         resolve_next_layer_dependencies(
-            dependencies, helm_directory, global_dependencies
+            dependencies, helm_directory, global_dependencies, dry_run=False
         )
     assert len(caplog.records) > 0
     assert f"Found {len(dependency_archives)} archives." in caplog.text
@@ -170,7 +172,7 @@ def test_resolve_dependencies_empty_global_empty_deps(
     mock_resolve_next_layer_dependencies.return_value = None
     mock_add_dependency_repositories.return_value = None
     with caplog.at_level(logging.DEBUG):
-        resolve_dependencies(helm_directory, global_dependencies)
+        resolve_dependencies(helm_directory, global_dependencies, dry_run=False)
     assert f"Found {len(dependencies)} dependencies" in caplog.text
     assert len(caplog.records) > 0
     for record in caplog.records:
@@ -203,7 +205,7 @@ def test_resolve_dependencies_empty_global_mixed_deps(
     mock_resolve_next_layer_dependencies.return_value = None
     mock_add_dependency_repositories.return_value = None
     with caplog.at_level(logging.DEBUG):
-        resolve_dependencies(helm_directory, global_dependencies)
+        resolve_dependencies(helm_directory, global_dependencies, dry_run=False)
     assert len(caplog.records) > 0
     assert f"Found {len(dependencies)} dependencies" in caplog.text
     assert "already known" not in caplog.text
@@ -237,7 +239,7 @@ def test_resolve_dependencies_eq_global_mixed_deps(
     mock_resolve_next_layer_dependencies.return_value = None
     mock_add_dependency_repositories.return_value = None
     with caplog.at_level(logging.DEBUG):
-        resolve_dependencies(helm_directory, global_dependencies)
+        resolve_dependencies(helm_directory, global_dependencies, dry_run=False)
     assert len(caplog.records) > 0
     assert f"Found {len(dependencies)} dependencies" in caplog.text
     assert "already known" in caplog.text
@@ -273,7 +275,7 @@ def test_resolve_dependencies_conflict_global_mixed_deps(
 
     with caplog.at_level(logging.DEBUG):
         with pytest.raises(RuntimeError, match="conflicting versions"):
-            resolve_dependencies(helm_directory, global_dependencies)
+            resolve_dependencies(helm_directory, global_dependencies, dry_run=False)
     assert len(caplog.records) > 0
     assert f"Found {len(dependencies)} dependencies" in caplog.text
     mock_extract_dependencies_from_chart.assert_called_with(chart_file=top_level_chart)
