@@ -9,3 +9,12 @@ SERVICE_SKELETON = "https://github.com/nexient-llc/launch-terragrunt-skeleton.gi
 SKELETON_BRANCH = "main"
 MAIN_BRANCH = "main"
 INIT_BRANCH = "feature/init"
+DISCOVERY_FORBIDDEN_DIRECTORIES = [
+    ".git",
+    "components",
+    ".repo",
+    "__pycache__",
+    ".venv",
+    ".terraform",
+    ".terragrunt-cache",
+]
