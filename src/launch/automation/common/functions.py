@@ -3,6 +3,7 @@ import logging
 import os
 import string
 import subprocess
+from pathlib import Path
 
 from git import Repo
 
@@ -108,3 +109,29 @@ def make_configure() -> None:
         subprocess.run(["make", "configure"], check=True)
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"An error occurred: {str(e)}") from e
+
+
+def traverse_with_callback(
+    dictionary: dict, callback, current_path: Path = Path("platform"), *args, **kwargs
+):
+    if isinstance(dictionary, dict):
+        for key, value in list(dictionary.items()):
+            kwargs["nested_dict"] = dictionary
+            result, data = callback(
+                key=key,
+                value=value,
+                dictionary=dictionary,
+                current_path=current_path,
+                **kwargs,
+            )
+            if result:
+                traverse_with_callback(
+                    dictionary=value,
+                    callback=callback,
+                    current_path=current_path / Path(key),
+                    *args,
+                    **kwargs,
+                )
+    elif isinstance(dict, list):
+        pass
+    return data

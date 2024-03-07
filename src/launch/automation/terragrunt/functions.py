@@ -1,18 +1,21 @@
+import json
 import logging
 import os
 import subprocess
+from pathlib import Path
 
 from git import Repo
 
-from launch import CODE_GENERATION_DIR_SUFFIX
+from launch import BUILD_DEPEPENDENCIES_DIR, CODE_GENERATION_DIR_SUFFIX
 from launch.automation.common.functions import (
     check_git_changes,
     install_tool_versions,
     make_configure,
     set_netrc,
+    traverse_with_callback,
 )
 from launch.automation.provider.aws.functions import assume_role
-from launch.automation.provider.az.functions import deploy_remote_state
+from launch.automation.provider.az.functions import callback_deploy_remote_state
 
 logger = logging.getLogger(__name__)
 
@@ -127,11 +130,18 @@ def prepare_for_terragrunt(
     override: dict,
 ):
     os.chdir(f"{path}/{name}{CODE_GENERATION_DIR_SUFFIX}")
+    with open(f"{path}/{name}{CODE_GENERATION_DIR_SUFFIX}/.launch_config", "r") as f:
+        launch_config = json.load(f)
 
     install_tool_versions(
         file=override["tool_versions_file"],
     )
     set_netrc(password=git_token, machine=override["machine"], login=override["login"])
+
+    if pipeline_resource:
+        exec_dir = f"{override['infrastructure_dir']}/{pipeline_resource}-{provider}"
+    else:
+        exec_dir = f"{override['environment_dir']}"
 
     # If the Provider is AZURE there is a prequisite requirement of logging into azure
     # i.e. az login, or service principal is already applied to the environment.
@@ -146,14 +156,13 @@ def prepare_for_terragrunt(
             )
         if provider == "az" or provider == "azdo":
             make_configure()
-            deploy_remote_state(
+            traverse_with_callback(
+                dictionary=launch_config["platform"],
+                callback=callback_deploy_remote_state,
+                base_path=f"{path}/{name}{CODE_GENERATION_DIR_SUFFIX}/{BUILD_DEPEPENDENCIES_DIR}/",
+                naming_prefix=launch_config["naming_prefix"],
+                target_environment=target_environment,
                 provider_config=provider_config,
-                provider=provider,
             )
 
-    if pipeline_resource:
-        exec_dir = f"{override['infrastructure_dir']}/{pipeline_resource}-{provider}/{target_environment}"
-    else:
-        exec_dir = f"{override['environment_dir']}/{target_environment}"
-
-    os.chdir(exec_dir)
+    os.chdir(Path(exec_dir) / Path(target_environment))

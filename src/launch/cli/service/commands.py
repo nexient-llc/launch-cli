@@ -14,14 +14,15 @@ from launch import (
     INIT_BRANCH,
     MAIN_BRANCH,
 )
+from launch.automation.common.functions import traverse_with_callback
 from launch.cli.github.access.commands import set_default
 from launch.github.auth import get_github_instance
 from launch.github.repo import create_repository, repo_exist
 from launch.local_repo.repo import checkout_branch, clone_repository, push_branch
 from launch.service.common import (
+    callback_copy_properties_files,
+    callback_create_directories,
     copy_and_render_templates,
-    copy_properties_files,
-    create_directories,
     input_data_validation,
     list_jinja_templates,
     write_text,
@@ -147,13 +148,16 @@ def create(
         new_branch=True,
     )
 
-    create_directories(
-        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}",
-        platform_data=input_data["platform"],
-    )
-    input_data["platform"] = copy_properties_files(
+    traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_create_directories,
         base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
-        platform_data=input_data["platform"],
+    )
+
+    input_data["platform"] = traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_copy_properties_files,
+        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
     )
     write_text(
         data=input_data,
@@ -270,13 +274,16 @@ def update(
                 f"Directory not found when trying to delete: {service_path}/{BUILD_DEPEPENDENCIES_DIR}"
             )
 
-    create_directories(
-        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}",
-        platform_data=input_data["platform"],
-    )
-    input_data["platform"] = copy_properties_files(
+    traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_create_directories,
         base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
-        platform_data=input_data["platform"],
+    )
+
+    input_data["platform"] = traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_copy_properties_files,
+        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
     )
     write_text(
         data=input_data,
@@ -372,11 +379,20 @@ def generate(
         f"{singlerun_path}/{BUILD_DEPEPENDENCIES_DIR}",
         dirs_exist_ok=True,
     )
+    shutil.copyfile(
+        f"{service_path}/.launch_config", f"{singlerun_path}/.launch_config"
+    )
 
     # Creating directories and copying properties files
-    create_directories(singlerun_path, input_data["platform"])
-    copy_properties_files(
-        base_path=singlerun_path, platform_data=input_data["platform"]
+    traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_create_directories,
+        base_path=singlerun_path,
+    )
+    traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_copy_properties_files,
+        base_path=singlerun_path,
     )
 
     # Placing Jinja templates

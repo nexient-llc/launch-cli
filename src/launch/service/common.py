@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import shutil
+import uuid
 from pathlib import Path
 from typing import List
 
@@ -13,48 +14,44 @@ from launch import BUILD_DEPEPENDENCIES_DIR, SERVICE_SKELETON, SKELETON_BRANCH
 logger = logging.getLogger(__name__)
 
 
-def create_directories(
-    base_path: str, platform_data: dict, current_path: str = "platform"
-) -> None:
-    if isinstance(platform_data, dict):
-        for key, value in platform_data.items():
-            if isinstance(value, dict):
-                next_path = Path(base_path) / current_path / key
-                next_path.mkdir(parents=True, exist_ok=True)
-                create_directories(base_path, value, Path(current_path) / key)
-            else:
-                next_path = Path(base_path) / current_path
-                next_path.mkdir(parents=True, exist_ok=True)
-    elif isinstance(platform_data, list):
-        pass
+def callback_create_directories(
+    key,
+    value,
+    **kwargs,
+) -> bool:
+    if isinstance(value, dict):
+        next_path = Path(kwargs["base_path"]) / kwargs["current_path"] / Path(key)
+        next_path.mkdir(parents=True, exist_ok=True)
+        return True, None
+    else:
+        next_path = Path(kwargs["base_path"]) / kwargs["current_path"]
+        next_path.mkdir(parents=True, exist_ok=True)
+
+    return False, None
 
 
-def copy_properties_files(
-    base_path: Path, platform_data: dict, current_path: Path = Path("platform")
+def callback_copy_properties_files(
+    key,
+    value,
+    **kwargs,
 ) -> dict:
-    if isinstance(platform_data, dict):
-        for key, value in platform_data.items():
-            if isinstance(value, dict):
-                copy_properties_files(
-                    base_path=base_path,
-                    platform_data=value,
-                    current_path=current_path / Path(key),
-                )
-            elif key == "properties_file":
-                dest_path = base_path / current_path
-                dest_path.mkdir(parents=True, exist_ok=True)
-                logger.info(f"Copying {base_path}/{value} to {dest_path}")
-                shutil.copy(
-                    base_path / Path(value), dest_path / Path("terraform.tfvars")
-                )
+    if isinstance(value, dict):
+        return True, None
+    elif key == "properties_file":
+        dest_path = kwargs["base_path"] / kwargs["current_path"]
+        dest_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Copying {kwargs.get('base_path')}/{value} to {dest_path}")
+        shutil.copy(
+            kwargs["base_path"] / Path(value), dest_path / Path("terraform.tfvars")
+        )
 
-                relative_path = str(dest_path).removeprefix(base_path)
-                platform_data[
-                    key
-                ] = f"{BUILD_DEPEPENDENCIES_DIR}/{relative_path}/terraform.tfvars"
-    elif isinstance(platform_data, list):
-        pass
-    return platform_data
+        relative_path = str(dest_path).removeprefix(kwargs["base_path"])
+        kwargs["nested_dict"][
+            key
+        ] = f"{BUILD_DEPEPENDENCIES_DIR}/{relative_path}/terraform.tfvars"
+        kwargs["nested_dict"]["az_storage_name"] = f"{str(uuid.uuid4())[:6]}"
+
+    return False, kwargs["nested_dict"]
 
 
 def list_jinja_templates(base_dir: str) -> tuple:
