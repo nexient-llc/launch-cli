@@ -11,7 +11,7 @@ def callback_deploy_remote_state(
 ) -> dict:
     if isinstance(value, dict):
         return True, None
-    elif key == "az_storage_name":
+    elif key == "uuid":
         path_array = kwargs["current_path"].parts
         deploy_remote_state(
             uuid_value=value,

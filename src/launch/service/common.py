@@ -49,7 +49,7 @@ def callback_copy_properties_files(
         kwargs["nested_dict"][
             key
         ] = f"{BUILD_DEPEPENDENCIES_DIR}/{relative_path}/terraform.tfvars"
-        kwargs["nested_dict"]["az_storage_name"] = f"{str(uuid.uuid4())[:6]}"
+        kwargs["nested_dict"]["uuid"] = f"{str(uuid.uuid4())[:6]}"
 
     return False, kwargs["nested_dict"]
 
@@ -82,6 +82,10 @@ def render_jinja_template(
     env = Environment(loader=FileSystemLoader(template_path.parent))
     template = env.get_template(template_path.name)
     template_data["data"]["path"] = str(destination_dir)
+    template_data["data"]["config"]["dir_dict"] = get_value_by_path(
+        template_data["data"]["config"]["platform"],
+        str(destination_dir)[(str(destination_dir).find("platform") + 9) :],
+    )
     output = template.render(template_data)
     destination_path = destination_dir / file_name
 
@@ -94,6 +98,17 @@ def create_specific_path(base_path: Path, path_parts: list) -> list:
     specific_path = base_path.joinpath(*path_parts)
     specific_path.mkdir(parents=True, exist_ok=True)
     return [specific_path]
+
+
+def get_value_by_path(data: dict, path: str) -> dict:
+    keys = path.split("/")
+    val = data
+    for key in keys:
+        if isinstance(val, dict):
+            val = val.get(key)
+        else:
+            return None
+    return val
 
 
 def expand_wildcards(

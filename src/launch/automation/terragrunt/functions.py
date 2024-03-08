@@ -138,11 +138,6 @@ def prepare_for_terragrunt(
     )
     set_netrc(password=git_token, machine=override["machine"], login=override["login"])
 
-    if pipeline_resource:
-        exec_dir = f"{override['infrastructure_dir']}/{pipeline_resource}-{provider}"
-    else:
-        exec_dir = f"{override['environment_dir']}"
-
     # If the Provider is AZURE there is a prequisite requirement of logging into azure
     # i.e. az login, or service principal is already applied to the environment.
     # If the provider is AWS, we need to assume the role for deployment.
@@ -164,5 +159,10 @@ def prepare_for_terragrunt(
                 target_environment=target_environment,
                 provider_config=provider_config,
             )
+
+    if pipeline_resource:
+        exec_dir = f"{override['infrastructure_dir']}/{pipeline_resource}-{provider}"
+    else:
+        exec_dir = f"{override['environment_dir']}"
 
     os.chdir(Path(exec_dir) / Path(target_environment))

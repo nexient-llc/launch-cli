@@ -113,7 +113,7 @@ def make_configure() -> None:
 
 def traverse_with_callback(
     dictionary: dict, callback, current_path: Path = Path("platform"), *args, **kwargs
-):
+) -> dict:
     if isinstance(dictionary, dict):
         for key, value in list(dictionary.items()):
             kwargs["nested_dict"] = dictionary
@@ -134,4 +134,4 @@ def traverse_with_callback(
                 )
     elif isinstance(dict, list):
         pass
-    return data
+    return data or dictionary
