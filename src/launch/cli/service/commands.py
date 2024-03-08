@@ -25,6 +25,7 @@ from launch.service.common import (
     copy_and_render_templates,
     input_data_validation,
     list_jinja_templates,
+    merge_key_into_dict,
     write_text,
 )
 
@@ -82,6 +83,12 @@ logger = logging.getLogger(__name__)
     help="The git commit message to use when creating a commit. Defaults to 'Initial commit'.",
 )
 @click.option(
+    "--no-uuid",
+    is_flag=True,
+    default=False,
+    help="If set, it will not generate a UUID to be used in skeleton files.",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -102,6 +109,7 @@ def create(
     in_file: IO[Any],
     skip_commit: bool,
     git_message: str,
+    no_uuid: bool,
     dry_run: bool,
 ):
     """Creates a new service."""
@@ -158,6 +166,7 @@ def create(
         dictionary=input_data["platform"],
         callback=callback_copy_properties_files,
         base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
+        uuid=not no_uuid,
     )
     write_text(
         data=input_data,
@@ -208,6 +217,12 @@ def create(
     help="The git commit message to use when creating a commit. Defaults to 'bot: launch service update commit'.",
 )
 @click.option(
+    "--uuid",
+    is_flag=True,
+    default=False,
+    help="If set, it will generate a new UUID to be used in skeleton files.",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -222,6 +237,7 @@ def update(
     skip_git: bool,
     skip_commit: bool,
     git_message: str,
+    uuid: bool,
     dry_run: bool,
 ):
     """Updates a service."""
@@ -238,6 +254,9 @@ def update(
 
     input_data = json.load(in_file)
     input_data = input_data_validation(input_data)
+
+    with open(f"{service_path}/.launch_config", "r") as f:
+        launch_config = json.load(f)
 
     g = get_github_instance()
 
@@ -284,7 +303,11 @@ def update(
         dictionary=input_data["platform"],
         callback=callback_copy_properties_files,
         base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
+        uuid=uuid,
     )
+    if not uuid:
+        merge_key_into_dict(launch_config, input_data, "uuid")
+
     write_text(
         data=input_data,
         path=Path(f"{service_path}/.launch_config"),

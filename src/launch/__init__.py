@@ -1,6 +1,6 @@
 from semver import Version
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 SEMANTIC_VERSION = Version.parse(VERSION)
 GITHUB_ORG_NAME = "nexient-llc"
@@ -11,3 +11,12 @@ MAIN_BRANCH = "main"
 INIT_BRANCH = "feature/init"
 BUILD_DEPEPENDENCIES_DIR = ".launch"
 CODE_GENERATION_DIR_SUFFIX = "-singleRun"
+DISCOVERY_FORBIDDEN_DIRECTORIES = [
+    ".git",
+    "components",
+    ".repo",
+    "__pycache__",
+    ".venv",
+    ".terraform",
+    ".terragrunt-cache",
+]

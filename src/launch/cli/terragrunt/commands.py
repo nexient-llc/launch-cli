@@ -156,8 +156,8 @@ def plan(
         override=override,
     )
 
-    # terragrunt_init()
-    # terragrunt_plan()
+    terragrunt_init()
+    terragrunt_plan()
 
 
 @click.command()

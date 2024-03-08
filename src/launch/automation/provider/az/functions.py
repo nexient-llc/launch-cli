@@ -35,6 +35,7 @@ def deploy_remote_state(
 ) -> None:
     run_list = ["make"]
     provider = provider_config["provider"]
+
     if naming_prefix:
         run_list.append(f"NAME_PREFIX={naming_prefix}")
     if region:
