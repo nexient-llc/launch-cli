@@ -1,0 +1,6 @@
+simple_key: string value
+list_key:
+  - list
+  - value
+map_key:
+  nested_key: nested_value
