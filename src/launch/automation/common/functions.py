@@ -120,6 +120,7 @@ def make_configure() -> None:
 def traverse_with_callback(
     dictionary: dict, callback, current_path: Path = Path("platform"), **kwargs
 ) -> dict:
+    data = None
     if isinstance(dictionary, dict):
         for key, value in list(dictionary.items()):
             kwargs["nested_dict"] = dictionary

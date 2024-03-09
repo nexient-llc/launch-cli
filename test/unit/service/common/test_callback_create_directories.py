@@ -6,3 +6,7 @@ from pathlib import Path
 import pytest
 
 from launch.service.common import callback_create_directories
+
+
+def test_one():
+    assert False
