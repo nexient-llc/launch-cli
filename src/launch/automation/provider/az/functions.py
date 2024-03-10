@@ -8,9 +8,9 @@ def callback_deploy_remote_state(
     key,
     value,
     **kwargs,
-) -> dict:
+) -> bool:
     if isinstance(value, dict):
-        return True, None
+        return False
     elif key == "uuid":
         try:
             path_array = kwargs["current_path"].parts
@@ -26,7 +26,7 @@ def callback_deploy_remote_state(
             message = f"Missing key in kwargs: {e}"
             logger.error(message)
             raise RuntimeError(message) from e
-    return False, None
+    return True
 
 
 def deploy_remote_state(

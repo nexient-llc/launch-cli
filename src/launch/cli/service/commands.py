@@ -8,7 +8,7 @@ import click
 from git import Repo
 
 from launch import (
-    BUILD_DEPEPENDENCIES_DIR,
+    BUILD_DEPENDENCIES_DIR,
     CODE_GENERATION_DIR_SUFFIX,
     GITHUB_ORG_NAME,
     INIT_BRANCH,
@@ -159,13 +159,13 @@ def create(
     traverse_with_callback(
         dictionary=input_data["platform"],
         callback=callback_create_directories,
-        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
+        base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
     )
 
     input_data["platform"] = traverse_with_callback(
         dictionary=input_data["platform"],
         callback=callback_copy_properties_files,
-        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
+        base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
         uuid=not no_uuid,
     )
     write_text(
@@ -287,22 +287,22 @@ def update(
     else:
         repository = Repo(service_path)
         try:
-            shutil.rmtree(f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}")
+            shutil.rmtree(f"{service_path}/{BUILD_DEPENDENCIES_DIR}")
         except FileNotFoundError:
             logger.info(
-                f"Directory not found when trying to delete: {service_path}/{BUILD_DEPEPENDENCIES_DIR}"
+                f"Directory not found when trying to delete: {service_path}/{BUILD_DEPENDENCIES_DIR}"
             )
 
     traverse_with_callback(
         dictionary=input_data["platform"],
         callback=callback_create_directories,
-        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
+        base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
     )
 
     input_data["platform"] = traverse_with_callback(
         dictionary=input_data["platform"],
         callback=callback_copy_properties_files,
-        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
+        base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
         uuid=uuid,
     )
     if not uuid:
@@ -398,8 +398,8 @@ def generate(
     )
 
     shutil.copytree(
-        f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}",
-        f"{singlerun_path}/{BUILD_DEPEPENDENCIES_DIR}",
+        f"{service_path}/{BUILD_DEPENDENCIES_DIR}",
+        f"{singlerun_path}/{BUILD_DEPENDENCIES_DIR}",
         dirs_exist_ok=True,
     )
     shutil.copyfile(
@@ -420,7 +420,7 @@ def generate(
 
     # Placing Jinja templates
     template_paths, jinja_paths = list_jinja_templates(
-        singlerun_path / Path(f"{BUILD_DEPEPENDENCIES_DIR}/jinja2")
+        singlerun_path / Path(f"{BUILD_DEPENDENCIES_DIR}/jinja2")
     )
     copy_and_render_templates(
         base_dir=singlerun_path,

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from git import Repo
 
-from launch import BUILD_DEPEPENDENCIES_DIR, CODE_GENERATION_DIR_SUFFIX
+from launch import BUILD_DEPENDENCIES_DIR, CODE_GENERATION_DIR_SUFFIX
 from launch.automation.common.functions import (
     check_git_changes,
     install_tool_versions,
@@ -154,7 +154,7 @@ def prepare_for_terragrunt(
             traverse_with_callback(
                 dictionary=launch_config["platform"],
                 callback=callback_deploy_remote_state,
-                base_path=f"{path}/{name}{CODE_GENERATION_DIR_SUFFIX}/{BUILD_DEPEPENDENCIES_DIR}/",
+                base_path=f"{path}/{name}{CODE_GENERATION_DIR_SUFFIX}/{BUILD_DEPENDENCIES_DIR}/",
                 naming_prefix=launch_config["naming_prefix"],
                 target_environment=target_environment,
                 provider_config=provider_config,

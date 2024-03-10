@@ -26,5 +26,9 @@
             "storage_account_name": "test_storage_account",
             "resource_group_name": "test_resource_group"
         }
+    },
+    "callback": {
+        "key": "uuid",
+        "value": "12345678"
     }
 }

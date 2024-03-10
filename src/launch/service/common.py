@@ -9,7 +9,7 @@ from typing import List
 import yaml
 from jinja2 import Environment, FileSystemLoader
 
-from launch import BUILD_DEPEPENDENCIES_DIR, SERVICE_SKELETON, SKELETON_BRANCH
+from launch import BUILD_DEPENDENCIES_DIR, SERVICE_SKELETON, SKELETON_BRANCH
 
 logger = logging.getLogger(__name__)
 
@@ -22,21 +22,21 @@ def callback_create_directories(
     if isinstance(value, dict):
         next_path = Path(kwargs["base_path"]) / kwargs["current_path"] / Path(key)
         next_path.mkdir(parents=True, exist_ok=True)
-        return True, None
+        return False
     else:
         next_path = Path(kwargs["base_path"]) / kwargs["current_path"]
         next_path.mkdir(parents=True, exist_ok=True)
 
-    return False, None
+    return True
 
 
 def callback_copy_properties_files(
     key,
     value,
     **kwargs,
-) -> dict:
+) -> bool:
     if isinstance(value, dict):
-        return True, None
+        return None
     elif key == "properties_file":
         dest_path = kwargs["base_path"] / kwargs["current_path"]
         dest_path.mkdir(parents=True, exist_ok=True)
@@ -48,11 +48,11 @@ def callback_copy_properties_files(
         relative_path = str(dest_path).removeprefix(kwargs["base_path"])
         kwargs["nested_dict"][
             key
-        ] = f"{BUILD_DEPEPENDENCIES_DIR}/{relative_path}/terraform.tfvars"
+        ] = f"{BUILD_DEPENDENCIES_DIR}/{relative_path}/terraform.tfvars"
         if kwargs.get("uuid", False):
             kwargs["nested_dict"]["uuid"] = f"{str(uuid.uuid4())[:6]}"
 
-    return False, kwargs["nested_dict"]
+    return kwargs["nested_dict"]
 
 
 def list_jinja_templates(base_dir: str) -> tuple:

@@ -124,14 +124,14 @@ def traverse_with_callback(
     if isinstance(dictionary, dict):
         for key, value in list(dictionary.items()):
             kwargs["nested_dict"] = dictionary
-            result, data = callback(
+            data = callback(
                 key=key,
                 value=value,
                 dictionary=dictionary,
                 current_path=current_path,
                 **kwargs,
             )
-            if result:
+            if not data:
                 traverse_with_callback(
                     dictionary=value,
                     callback=callback,

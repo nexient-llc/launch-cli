@@ -15,52 +15,49 @@ def fakedata():
         return json.load(f)
 
 
-# Test cases
-def test_simple_dict_callback_interaction(fakedata):
-    with patch(
+def test_value_is_dict(fakedata):
+    value = {}
+    result = callback_deploy_remote_state(fakedata["callback"]["key"], value)
+    assert result is False
+
+
+def test_uuid_with_all_kwargs(mocker, fakedata):
+    mock_deploy = mocker.patch(
         "launch.automation.provider.az.functions.deploy_remote_state"
-    ) as mock_deploy:
-        fakedata["kwargs"]["current_path"] = Path(fakedata["kwargs"]["current_path"])
-        traverse_with_callback(
-            fakedata["simple_dict"], callback_deploy_remote_state, **fakedata["kwargs"]
-        )
-        mock_deploy.assert_called_once_with(
-            uuid_value="1234-5678",
-            naming_prefix="test-prefix",
-            target_environment="production",
-            region="us-east-1",
-            instance="000",
-            provider_config={"key": "value"},
-        )
+    )
+    kwargs = {
+        "current_path": mocker.MagicMock(parts=["", "env", "instance"]),
+        "naming_prefix": "prefix",
+        "target_environment": "dev",
+        "provider_config": {},
+    }
 
+    result = callback_deploy_remote_state(
+        fakedata["callback"]["key"], fakedata["callback"]["value"], **kwargs
+    )
 
-def test_nested_dict_callback_interaction(fakedata):
-    with patch(
-        "launch.automation.provider.az.functions.deploy_remote_state"
-    ) as mock_deploy:
-        fakedata["kwargs"]["current_path"] = Path(fakedata["kwargs"]["current_path"])
-        traverse_with_callback(
-            fakedata["nested_dict"], callback_deploy_remote_state, **fakedata["kwargs"]
-        )
-        mock_deploy.assert_called_once_with(
-            uuid_value="1234-5678",
-            naming_prefix="test-prefix",
-            target_environment="production",
-            region="us-east-1",
-            instance="000",
-            provider_config={"key": "value"},
-        )
-
-
-def test_callback_return_values_for_dict(fakedata):
-    result, _ = callback_deploy_remote_state(
-        key="any_key", value={}, **fakedata["kwargs"]
+    mock_deploy.assert_called_once_with(
+        uuid_value=fakedata["callback"]["value"],
+        naming_prefix="prefix",
+        target_environment="dev",
+        region="env",
+        instance="instance",
+        provider_config={},
     )
     assert result is True
 
 
-def test_callback_return_values_for_uuid(fakedata):
-    result, _ = callback_deploy_remote_state(
-        key="key1", value="value1", **fakedata["kwargs"]
-    )
-    assert result is False
+def test_uuid_with_missing_kwargs(mocker, fakedata):
+    mocker.patch("launch.automation.provider.az.functions.logger")
+    kwargs = {
+        "current_path": mocker.MagicMock(parts=["", "env", "instance"]),
+        "target_environment": "dev",
+        "provider_config": {},
+    }
+
+    with pytest.raises(RuntimeError) as exc_info:
+        callback_deploy_remote_state(
+            fakedata["callback"]["key"], fakedata["callback"]["value"], **kwargs
+        )
+
+    assert "Missing key in kwargs" in str(exc_info.value)
