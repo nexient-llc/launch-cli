@@ -37,13 +37,13 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get("TARGETENV", "dev"),
+    default=os.environ.get("TARGETENV", "sandbox"),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
     "--provider-config",
     default=None,
-    help="Provider config is used for any specific config needed for certain providers. For example, AWS needs additional parameters to assume a deployment role. e.x {'provider':'aws','aws':{'role_arn':'arn:aws:iam::012345678912:role/myRole','region':'us-east-2'}}",
+    help="Provider config is used for any specific config needed for certain providers. For example, AWS needs additional parameters to assume a deployment role. e.x {'provider':'aws','aws':{'role_arn':'arn:aws:iam::012345678912:role/myRole'}}",
 )
 @click.option(
     "--skip-git",
@@ -66,7 +66,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--pipeline-resource",
     default=None,
-    help="If set, this will set the specified pipeline resource to run terragrunt against. Defaults to None. i.e. 'pipeline-provider'",
+    help="If set, this will set the specified pipeline resource to run terragrunt against. Defaults to None. i.e. 'pipeline'",
 )
 @click.option(
     "--path",
@@ -183,7 +183,7 @@ def plan(
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get("TARGETENV", "dev"),
+    default=os.environ.get("TARGETENV", "sandbox"),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
@@ -329,7 +329,7 @@ def apply(
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get("TARGETENV", "dev"),
+    default=os.environ.get("TARGETENV", "sandbox"),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
