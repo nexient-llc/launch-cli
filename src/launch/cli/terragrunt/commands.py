@@ -5,22 +5,31 @@ from pathlib import Path
 
 import click
 
+from launch import GITHUB_ORG_NAME
 from launch.automation.terragrunt.functions import *
+from launch.cli.service.commands import generate
+from launch.github.auth import get_github_instance
+from launch.local_repo.repo import checkout_branch, clone_repository
 
 logger = logging.getLogger(__name__)
 
 
 @click.command()
 @click.option(
-    "--repository-url",
+    "--organization",
+    default=GITHUB_ORG_NAME,
+    help=f"GitHub organization containing your repository. Defaults to the {GITHUB_ORG_NAME} organization.",
+)
+@click.option(
+    "--name",
     required=True,
-    help="(Required) The URL of the service repository to run the terragrunt command against.",
+    help="Name of the service repository to run the terragrunt command against.",
 )
 @click.option(
     "--git-token",
     default=os.environ.get("GITHUB_TOKEN", None),
     required=True,
-    help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
+    help="The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
 @click.option(
     "--commit-sha",
@@ -43,13 +52,19 @@ logger = logging.getLogger(__name__)
     help="If set, it will ignore cloning and checking out the git repository and it's properties.",
 )
 @click.option(
+    "--skip-generation",
+    is_flag=True,
+    default=False,
+    help="If set, it will ignore generating the terragrunt files.",
+)
+@click.option(
     "--skip-diff",
     is_flag=True,
     default=False,
     help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
-    "--is-infrastructure",
+    "--is-pipeline-resources",
     is_flag=True,
     default=False,
     help="If set, this changes the path to the infrastructure directory for deployment to run terragrunt against.",
@@ -79,15 +94,19 @@ logger = logging.getLogger(__name__)
     default=False,
     help="Perform a dry run that reports on what it would do, but does not perform any action.",
 )
+@click.pass_context
 def plan(
-    repository_url: str,
+    context: click.Context,
+    organization: str,
+    name: str,
     git_token: str,
     commit_sha: str,
     target_environment: str,
     provider_config: str,
     skip_git: bool,
+    skip_generation: bool,
     skip_diff: bool,
-    is_infrastructure: bool,
+    is_pipeline_resources: bool,
     path: str,
     override: dict,
     dry_run: bool,
@@ -96,16 +115,44 @@ def plan(
 
     if dry_run:
         click.secho("Performing a dry run, nothing will be updated", fg="yellow")
+        # TODO: add a dry run for terragrunt plan
+        return
+
+    g = get_github_instance()
+    service_repo = g.get_repo(f"{organization}/{name}")
+
+    if not skip_git:
+        service_repo = clone_repository(
+            target=service_repo.name,
+            repository_url=service_repo.clone_url,
+            branch=commit_sha,
+        )
+    else:
+        if not Path(f"{path}/{name}").exists():
+            click.secho(f"Error: Path {path}/{name} does not exist.", fg="red")
+            return
+        service_repo = Repo(f"{path}/{name}")
+
+    if not skip_generation:
+        context.invoke(
+            generate,
+            organization=organization,
+            name=name,
+            service_branch=commit_sha,
+            skip_git=True,
+            work_dir=path,
+            dry_run=dry_run,
+        )
 
     prepare_for_terragrunt(
-        repository_url=repository_url,
+        repository=service_repo,
+        name=name,
         git_token=git_token,
         commit_sha=commit_sha,
         target_environment=target_environment,
         provider_config=json.loads(provider_config),
-        skip_git=skip_git,
         skip_diff=skip_diff,
-        is_infrastructure=is_infrastructure,
+        is_pipeline_resources=is_pipeline_resources,
         path=path,
         override=override,
     )
@@ -116,15 +163,20 @@ def plan(
 
 @click.command()
 @click.option(
-    "--repository-url",
+    "--organization",
+    default=GITHUB_ORG_NAME,
+    help=f"GitHub organization containing your repository. Defaults to the {GITHUB_ORG_NAME} organization.",
+)
+@click.option(
+    "--name",
     required=True,
-    help="(Required) The URL of the service repository to run the terragrunt command against.",
+    help="Name of the service repository to run the terragrunt command against.",
 )
 @click.option(
     "--git-token",
     default=os.environ.get("GITHUB_TOKEN", None),
     required=True,
-    help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
+    help="The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
 @click.option(
     "--commit-sha",
@@ -147,13 +199,19 @@ def plan(
     help="If set, it will ignore cloning and checking out the git repository and it's properties.",
 )
 @click.option(
+    "--skip-generation",
+    is_flag=True,
+    default=False,
+    help="If set, it will ignore generating the terragrunt files.",
+)
+@click.option(
     "--skip-diff",
     is_flag=True,
     default=False,
     help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
-    "--is-infrastructure",
+    "--is-pipeline-resources",
     is_flag=True,
     default=False,
     help="If set, this changes the path to the infrastructure directory for deployment to run terragrunt against.",
@@ -183,15 +241,19 @@ def plan(
     default=False,
     help="Perform a dry run that reports on what it would do, but does not perform any action.",
 )
+@click.pass_context
 def apply(
-    repository_url: str,
+    context: click.Context,
+    organization: str,
+    name: str,
     git_token: str,
     commit_sha: str,
     target_environment: str,
     provider_config: dict,
     skip_git: bool,
+    skip_generation: bool,
     skip_diff: bool,
-    is_infrastructure: bool,
+    is_pipeline_resources: bool,
     path: str,
     override: dict,
     dry_run: bool,
@@ -200,16 +262,44 @@ def apply(
 
     if dry_run:
         click.secho("Performing a dry run, nothing will be updated", fg="yellow")
+        # TODO: add a dry run for terragrunt apply
+        return
+
+    g = get_github_instance()
+    service_repo = g.get_repo(f"{organization}/{name}")
+
+    if not skip_git:
+        service_repo = clone_repository(
+            target=service_repo.name,
+            repository_url=service_repo.clone_url,
+            branch=commit_sha,
+        )
+    else:
+        if not Path(f"{path}/{name}").exists():
+            click.secho(f"Error: Path {path}/{name} does not exist.", fg="red")
+            return
+        service_repo = Repo(f"{path}/{name}")
+
+    if not skip_generation:
+        context.invoke(
+            generate,
+            organization=organization,
+            name=name,
+            service_branch=commit_sha,
+            skip_git=True,
+            work_dir=path,
+            dry_run=dry_run,
+        )
 
     prepare_for_terragrunt(
-        repository_url=repository_url,
+        repository=service_repo,
+        name=name,
         git_token=git_token,
         commit_sha=commit_sha,
         target_environment=target_environment,
         provider_config=json.loads(provider_config),
-        skip_git=skip_git,
         skip_diff=skip_diff,
-        is_infrastructure=is_infrastructure,
+        is_pipeline_resources=is_pipeline_resources,
         path=path,
         override=override,
     )
@@ -220,15 +310,20 @@ def apply(
 
 @click.command()
 @click.option(
-    "--repository-url",
+    "--organization",
+    default=GITHUB_ORG_NAME,
+    help=f"GitHub organization containing your repository. Defaults to the {GITHUB_ORG_NAME} organization.",
+)
+@click.option(
+    "--name",
     required=True,
-    help="(Required) The URL of the service repository to run the terragrunt command against.",
+    help="Name of the service repository to run the terragrunt command against.",
 )
 @click.option(
     "--git-token",
     default=os.environ.get("GITHUB_TOKEN", None),
     required=True,
-    help="(Required) The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
+    help="The git token to use to clone the repositories. This defaults to the GIT_TOKEN environment variable.",
 )
 @click.option(
     "--commit-sha",
@@ -251,13 +346,19 @@ def apply(
     help="If set, it will ignore cloning and checking out the git repository and it's properties.",
 )
 @click.option(
+    "--skip-generation",
+    is_flag=True,
+    default=False,
+    help="If set, it will ignore generating the terragrunt files.",
+)
+@click.option(
     "--skip-diff",
     is_flag=True,
     default=False,
     help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
-    "--is-infrastructure",
+    "--is-pipeline-resources",
     is_flag=True,
     default=False,
     help="If set, this changes the path to the infrastructure directory for deployment to run terragrunt against.",
@@ -287,15 +388,19 @@ def apply(
     default=False,
     help="Perform a dry run that reports on what it would do, but does not perform any action.",
 )
+@click.pass_context
 def destroy(
-    repository_url: str,
+    context: click.Context,
+    organization: str,
+    name: str,
     git_token: str,
     commit_sha: str,
     target_environment: str,
     provider_config: str,
     skip_git: bool,
+    skip_generation: bool,
     skip_diff: bool,
-    is_infrastructure: bool,
+    is_pipeline_resources: bool,
     path: str,
     override: dict,
     dry_run: bool,
@@ -304,16 +409,44 @@ def destroy(
 
     if dry_run:
         click.secho("Performing a dry run, nothing will be updated", fg="yellow")
+        # TODO: add a dry run for terragrunt destroy
+        return
+
+    g = get_github_instance()
+    service_repo = g.get_repo(f"{organization}/{name}")
+
+    if not skip_git:
+        service_repo = clone_repository(
+            target=service_repo.name,
+            repository_url=service_repo.clone_url,
+            branch=commit_sha,
+        )
+    else:
+        if not Path(f"{path}/{name}").exists():
+            click.secho(f"Error: Path {path}/{name} does not exist.", fg="red")
+            return
+        service_repo = Repo(f"{path}/{name}")
+
+    if not skip_generation:
+        context.invoke(
+            generate,
+            organization=organization,
+            name=name,
+            service_branch=commit_sha,
+            skip_git=True,
+            work_dir=path,
+            dry_run=dry_run,
+        )
 
     prepare_for_terragrunt(
-        repository_url=repository_url,
+        repository=service_repo,
+        name=name,
         git_token=git_token,
         commit_sha=commit_sha,
         target_environment=target_environment,
         provider_config=json.loads(provider_config),
-        skip_git=skip_git,
         skip_diff=skip_diff,
-        is_infrastructure=is_infrastructure,
+        is_pipeline_resources=is_pipeline_resources,
         path=path,
         override=override,
     )

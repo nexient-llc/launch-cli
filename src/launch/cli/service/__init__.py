@@ -1,6 +1,6 @@
 import click
 
-from .commands import create
+from .commands import cleanup, create, generate, update
 
 
 @click.group(name="service")
@@ -9,3 +9,6 @@ def service_group():
 
 
 service_group.add_command(create)
+service_group.add_command(generate)
+service_group.add_command(cleanup)
+service_group.add_command(update)

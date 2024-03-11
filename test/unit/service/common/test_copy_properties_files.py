@@ -18,7 +18,7 @@ def test_copy_properties_files_from_nested_dict(fakedata):
         copy_properties_files(base_path, fakedata)
 
         dest_path = (
-            Path(temp_dir) / "platform/service/sandbox/us-east-2/temp.properties"
+            Path(temp_dir) / "platform/service/sandbox/us-east-2/terraform.tfvars"
         )
         assert dest_path.exists()
 
@@ -35,12 +35,12 @@ def test_non_dict_platform_data():
 def test_properties_file_in_root_dict():
     with tempfile.TemporaryDirectory() as temp_dir:
         base_path = temp_dir
-        temp_properties_file = Path(temp_dir) / "root.properties"
+        temp_properties_file = Path(temp_dir) / "terraform.tfvars"
         temp_properties_file.write_text("root properties")
 
         platform_data = {"properties_file": str(temp_properties_file)}
 
         copy_properties_files(base_path, platform_data)
 
-        dest_path = Path(temp_dir) / "platform/root.properties"
+        dest_path = Path(temp_dir) / "platform/terraform.tfvars"
         assert dest_path.exists()
