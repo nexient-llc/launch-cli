@@ -278,11 +278,7 @@ def update(
         repository = clone_repository(
             repository_url=repository.clone_url, target=name, branch=main_branch
         )
-        checkout_branch(
-            repository=repository,
-            target_branch=remote_branch,
-            new_branch=True,
-        )
+        checkout_branch(repository=repository, target_branch=remote_branch)
     else:
         repository = Repo(service_path)
         try:
