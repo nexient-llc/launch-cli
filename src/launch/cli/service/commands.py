@@ -248,9 +248,11 @@ def update(
         return
 
     service_path = f"{Path.cwd()}/{name}"
-    if not Path(service_path).exists():
-        click.secho(f"Error: Path {service_path} does not exist.", fg="red")
-        return
+
+    if skip_git:
+        if not Path(service_path).exists():
+            click.secho(f"Error: Path {service_path} does not exist.", fg="red")
+            return
 
     input_data = json.load(in_file)
     input_data = input_data_validation(input_data)
@@ -302,9 +304,6 @@ def update(
         base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
         uuid=uuid,
     )
-
-    with open(f"{service_path}/.launch_config", "r") as f:
-        launch_config = json.load(f)
 
     if not uuid:
         merge_key_into_dict(launch_config, input_data, "uuid")
