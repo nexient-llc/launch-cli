@@ -255,9 +255,6 @@ def update(
     input_data = json.load(in_file)
     input_data = input_data_validation(input_data)
 
-    with open(f"{service_path}/.launch_config", "r") as f:
-        launch_config = json.load(f)
-
     g = get_github_instance()
 
     if not repo_exist(name=f"{organization}/{name}", g=g):
@@ -305,6 +302,10 @@ def update(
         base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
         uuid=uuid,
     )
+
+    with open(f"{service_path}/.launch_config", "r") as f:
+        launch_config = json.load(f)
+
     if not uuid:
         merge_key_into_dict(launch_config, input_data, "uuid")
 
