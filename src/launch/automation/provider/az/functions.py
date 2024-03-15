@@ -1,4 +1,5 @@
 import logging
+import re
 import subprocess
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,8 @@ def deploy_remote_state(
     run_list = ["make"]
     provider = provider_config["provider"]
 
+    stripped_name = re.sub("[\W_]+", "", naming_prefix[0:16])
+    storage_account_name = f"{stripped_name}{uuid_value}"
     if naming_prefix:
         run_list.append(f"NAME_PREFIX={naming_prefix}")
     if region:
@@ -48,21 +51,22 @@ def deploy_remote_state(
         run_list.append(f"ENVIRONMENT={target_environment}")
     if instance:
         run_list.append(f"ENV_INSTANCE={instance}")
-    if provider_config[provider].get("container_name"):
-        run_list.append(
-            f"CONTAINER_NAME={provider_config[provider].get('container_name')}"
-        )
-    if provider_config[provider].get("storage_account_name"):
-        run_list.append(
-            f"STORAGE_ACCOUNT_NAME={provider_config[provider].get('storage_account_name')}"
-        )
-    else:
-        run_list.append(f"STORAGE_ACCOUNT_NAME={naming_prefix[0:16]}{uuid_value}")
-    if provider_config[provider].get("resource_group_name"):
-        run_list.append(
-            f"RESOURCE_GROUP_NAME={provider_config[provider].get('resource_group_name')}"
-        )
 
+    if provider in provider_config:
+        if "container_name" in provider_config[provider]:
+            run_list.append(
+                f"CONTAINER_NAME={provider_config[provider].get('container_name')}"
+            )
+        if "storage_account_name" in provider_config[provider]:
+            storage_account_name = f"STORAGE_ACCOUNT_NAME={provider_config[provider].get('storage_account_name')}"
+        else:
+            run_list.append(storage_account_name)
+        if provider_config[provider].get("resource_group_name"):
+            run_list.append(
+                f"RESOURCE_GROUP_NAME={provider_config[provider].get('resource_group_name')}"
+            )
+
+    run_list.append(storage_account_name)
     run_list.append("terragrunt/remote_state/azure")
 
     logger.info(f"Running {run_list}")

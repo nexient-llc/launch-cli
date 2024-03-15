@@ -28,8 +28,8 @@ def test_deploy_remote_state_all_parameters(mocker, fakedata):
         "ENVIRONMENT=prod",
         "ENV_INSTANCE=instance1",
         "CONTAINER_NAME=test_container",
-        "STORAGE_ACCOUNT_NAME=test_storage_account",
         "RESOURCE_GROUP_NAME=test_resource_group",
+        "STORAGE_ACCOUNT_NAME=test_storage_account",
         "terragrunt/remote_state/azure",
     ]
 
@@ -58,8 +58,8 @@ def test_deploy_remote_state_minimal_parameters(mocker, fakedata):
     expected_run_list = [
         "make",
         "CONTAINER_NAME=test_container",
-        "STORAGE_ACCOUNT_NAME=test_storage_account",
         "RESOURCE_GROUP_NAME=test_resource_group",
+        "STORAGE_ACCOUNT_NAME=test_storage_account",
         "terragrunt/remote_state/azure",
     ]
 
