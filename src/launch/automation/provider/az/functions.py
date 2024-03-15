@@ -41,8 +41,8 @@ def deploy_remote_state(
     run_list = ["make"]
     provider = provider_config["provider"]
 
-    stripped_name = re.sub("[\W_]+", "", naming_prefix[0:16])
-    storage_account_name = f"{stripped_name}{uuid_value}"
+    stripped_name = re.sub("[\W_]+", "", naming_prefix)
+    storage_account_name = f"{stripped_name[0:16]}{uuid_value}"
     if naming_prefix:
         run_list.append(f"NAME_PREFIX={naming_prefix}")
     if region:
