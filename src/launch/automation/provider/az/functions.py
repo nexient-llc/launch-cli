@@ -58,15 +58,13 @@ def deploy_remote_state(
                 f"CONTAINER_NAME={provider_config[provider].get('container_name')}"
             )
         if "storage_account_name" in provider_config[provider]:
-            storage_account_name = f"STORAGE_ACCOUNT_NAME={provider_config[provider].get('storage_account_name')}"
-        else:
-            run_list.append(storage_account_name)
+            storage_account_name = provider_config[provider].get("storage_account_name")
         if provider_config[provider].get("resource_group_name"):
             run_list.append(
                 f"RESOURCE_GROUP_NAME={provider_config[provider].get('resource_group_name')}"
             )
 
-    run_list.append(storage_account_name)
+    run_list.append(f"STORAGE_ACCOUNT_NAME={storage_account_name}")
     run_list.append("terragrunt/remote_state/azure")
 
     logger.info(f"Running {run_list}")
