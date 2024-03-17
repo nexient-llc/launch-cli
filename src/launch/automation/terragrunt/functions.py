@@ -149,7 +149,7 @@ def prepare_for_terragrunt(
                 repository_name=name,
                 target_environment=target_environment,
             )
-        if provider == "az" or provider == "azdo":
+        if provider.startswith("az"):
             make_configure()
             traverse_with_callback(
                 dictionary=launch_config["platform"],
