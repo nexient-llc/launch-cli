@@ -55,9 +55,7 @@ def test_uuid_with_missing_kwargs(mocker, fakedata):
         "provider_config": {},
     }
 
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(RuntimeError, match="Missing key in kwargs") as exc_info:
         callback_deploy_remote_state(
             fakedata["callback"]["key"], fakedata["callback"]["value"], **kwargs
         )
-
-    assert "Missing key in kwargs" in str(exc_info.value)
