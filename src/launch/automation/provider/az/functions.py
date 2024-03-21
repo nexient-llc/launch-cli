@@ -1,13 +1,14 @@
 import logging
 import re
 import subprocess
+from typing import Union
 
 logger = logging.getLogger(__name__)
 
 
 def callback_deploy_remote_state(
-    key,
-    value,
+    key: str,
+    value: Union[str, dict],
     **kwargs,
 ) -> bool:
     if isinstance(value, dict):

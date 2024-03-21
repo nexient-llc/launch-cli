@@ -25,7 +25,6 @@ from launch.service.common import (
     copy_and_render_templates,
     input_data_validation,
     list_jinja_templates,
-    merge_key_into_dict,
     write_text,
 )
 
@@ -300,10 +299,6 @@ def update(
         base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
         uuid=uuid,
     )
-
-    if not uuid:
-        merge_key_into_dict(launch_config, input_data, "uuid")
-
     write_text(
         data=input_data,
         path=Path(f"{service_path}/.launch_config"),
@@ -333,7 +328,7 @@ def update(
 @click.option(
     "--work-dir",
     default=Path.cwd(),
-    help="",
+    help="The work directory to generate launch platform files. Defaults to the current directory.",
 )
 @click.option(
     "--dry-run",
@@ -434,7 +429,7 @@ def generate(
 @click.option(
     "--work-dir",
     default=Path.cwd(),
-    help="",
+    help="The work directory to clean the launch generated files from. Defaults to the current directory.",
 )
 @click.option(
     "--dry-run",

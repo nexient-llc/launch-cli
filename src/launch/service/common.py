@@ -187,19 +187,3 @@ def input_data_validation(input_data: dict) -> dict:
         input_data["skeleton"]["tag"] = SKELETON_BRANCH
 
     return input_data
-
-
-def merge_key_into_dict(source: dict, target: dict, merge_key: str, path=None):
-    if path is None:
-        path = []
-    for key, value in source.items():
-        new_path = path + [key]
-        if key == merge_key:
-            current = target
-            for step in new_path[:-1]:
-                if step not in current:
-                    current[step] = {}
-                current = current[step]
-            current[new_path[-1]] = value
-        elif isinstance(value, dict):
-            merge_key_into_dict(value, target, merge_key, new_path)

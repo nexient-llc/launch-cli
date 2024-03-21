@@ -161,8 +161,15 @@ def prepare_for_terragrunt(
             )
 
     if pipeline_resource:
-        exec_dir = f"{override['infrastructure_dir']}/{pipeline_resource}-{provider}"
+        exec_dir = Path(
+            f"{override['infrastructure_dir']}/{pipeline_resource}-{provider}/{target_environment}"
+        )
     else:
-        exec_dir = f"{override['environment_dir']}"
+        exec_dir = Path(f"{override['environment_dir']}/{target_environment}")
 
-    os.chdir(Path(exec_dir) / Path(target_environment))
+    if not (exec_dir).exists():
+        message = f"Error: Path {exec_dir} does not exist."
+        logger.error(message, fg="red")
+        raise FileNotFoundError(message)
+
+    os.chdir(exec_dir)

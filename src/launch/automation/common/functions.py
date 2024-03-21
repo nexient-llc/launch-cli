@@ -7,6 +7,7 @@ import shutil
 import string
 import subprocess
 from pathlib import Path
+from typing import Callable
 
 from git import Repo
 from ruamel.yaml import YAML
@@ -118,8 +119,28 @@ def make_configure() -> None:
 
 
 def traverse_with_callback(
-    dictionary: dict, callback, current_path: Path = Path("platform"), **kwargs
+    dictionary: dict,
+    callback: Callable,
+    current_path: Path = Path("platform"),
+    **kwargs,
 ) -> dict:
+    """
+    Recursively traverses a dictionary and applies a callback function. The callback function is expected to return a dictionary, which will replace the current dictionary. If the callback function returns None, the current dictionary will be used. The callback function is expected to accept the following keyword arguments:
+    - key: The current key in the dictionary
+    - value: The current value in the dictionary
+    - dictionary: The current dictionary being traversed
+    - current_path: The current path in the dictionary
+    - **kwargs: Additional keyword arguments to pass to the callback function
+
+    Args:
+        dictionary (dict): The dictionary to traverse.
+        callback (Callable): The callback function to apply to each key-value pair.
+        current_path (Path, optional): The current path in the dictionary. Defaults to Path("platform").
+        **kwargs: Additional keyword arguments to pass to the callback function.
+
+    Returns:
+        dict: The modified dictionary after applying the callback function.
+    """
     data = None
     if isinstance(dictionary, dict):
         for key, value in list(dictionary.items()):

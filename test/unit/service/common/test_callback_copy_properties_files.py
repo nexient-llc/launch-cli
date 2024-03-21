@@ -18,41 +18,40 @@ def fakedata():
 
 @pytest.fixture
 def setup_file_structure(fakedata, tmp_path):
-    base_path = tmp_path / "base"
-    current_path = "current"
-    base_path.mkdir()
-    (base_path / current_path).mkdir(parents=True, exist_ok=True)
+    base_path = f"tmp_path/base/"
+    current_path = "current/path"
+    (Path(base_path) / current_path).mkdir(parents=True, exist_ok=True)
 
-    properties_file_path = base_path / fakedata["file"]
+    properties_file_path = Path(base_path) / fakedata["file"]
     properties_file_path.touch()
 
-    return base_path, current_path, properties_file_path
+    return base_path, current_path
 
 
 def test_callback_copy_properties_files_no_dict(fakedata, setup_file_structure):
-    base_path, current_path, properties_file = setup_file_structure
+    base_path, current_path = setup_file_structure
 
     kwargs = {
-        "base_path": str(base_path),
+        "base_path": base_path,
         "current_path": Path(current_path),
         "nested_dict": {},
     }
 
     result = callback_copy_properties_files(fakedata["key"], fakedata["file"], **kwargs)
-    expected_dest_path = base_path / current_path / "terraform.tfvars"
+    expected_dest_path = Path(base_path) / current_path / "terraform.tfvars"
 
     assert expected_dest_path.exists()
     assert "properties_file" in result
     assert (
         result["properties_file"]
-        == f"{BUILD_DEPENDENCIES_DIR}//{current_path}/terraform.tfvars"
+        == f"{BUILD_DEPENDENCIES_DIR}/{current_path}/terraform.tfvars"
     )
 
 
 def test_callback_copy_properties_files_with_uuid(fakedata, setup_file_structure):
-    base_path, current_path, properties_file = setup_file_structure
+    base_path, current_path = setup_file_structure
     kwargs = {
-        "base_path": str(base_path),
+        "base_path": base_path,
         "current_path": Path(current_path),
         "nested_dict": {},
         "uuid": True,
@@ -64,9 +63,9 @@ def test_callback_copy_properties_files_with_uuid(fakedata, setup_file_structure
 
 
 def test_callback_copy_properties_files_with_dict_value(fakedata, setup_file_structure):
-    base_path, current_path, _ = setup_file_structure
+    base_path, current_path = setup_file_structure
     kwargs = {
-        "base_path": str(base_path),
+        "base_path": base_path,
         "current_path": current_path,
         "nested_dict": {},
     }

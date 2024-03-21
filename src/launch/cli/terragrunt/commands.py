@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--provider-config",
-    default=None,
+    required=True,
     help="Provider config is used for any specific config needed for certain providers. For example, AWS needs additional parameters to assume a deployment role. e.x {'provider':'aws','aws':{'role_arn':'arn:aws:iam::012345678912:role/myRole'}}",
 )
 @click.option(
@@ -66,7 +66,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--pipeline-resource",
     default=None,
-    help="If set, this will set the specified pipeline resource to run terragrunt against. Defaults to None. i.e. 'pipeline'",
+    help="If set, this will un terragrunt against the specified pipeline resource. For example, setting this to 'pipeline' will run terragrunt against pipeline resources, 'webhooks' will run terragrunt against webhooks if this services uses them. This defaults to None, which will tell the command to run the terragrunt command against the service resources",
 )
 @click.option(
     "--path",
@@ -358,7 +358,7 @@ def apply(
 @click.option(
     "--pipeline-resource",
     default=None,
-    help="If set, this will set the specified pipeline resource to run terragrunt against. Defaults to None. i.e. 'pipeline-provider'",
+    help="If set, this will set the specified pipeline resource to run terragrunt against. Defaults to None. i.e. 'pipeline-azdo'",
 )
 @click.option(
     "--path",
