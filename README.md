@@ -95,7 +95,7 @@ launch --verbose github access ...
 
 The service family of commands represents all the automation needed for the lifecycle management of a service built and used with the Launch platform.
 
-`launch service create`: command is used to create a new service for the launch platform. This will create a new repository to the standard needed to run on the launch platform. This will be a properties drive only repository.
+`launch service create`: command is used to create a new service for the launch platform. This will create a new repository to the standard needed to run on the launch platform. This will be a properties driven only repository.
 
 ```sh
 $ launch service create --help
@@ -160,7 +160,7 @@ Example of launch_az_inputs.json:
             }
         },
         "pipeline": {
-            "pipeline-provider": {
+            "pipeline-azdo": {
                 "azdo": {
                     "sandbox": {
                         "000": {
@@ -207,14 +207,14 @@ Example of launch_aws_inputs.json:
             }
         },
         "pipeline": {
-            "pipeline-provider": {
+            "pipeline-aws": {
                 "aws": {
                     "sandbox": {
                         "properties_file": "/exact/path/aws_s3.tfvars"
                     }
                 }
             },
-            "git-provider": {
+            "webhook-aws": {
                 "aws": {
                     "webhook": {
                         "properties_file": "/exact/path/aws_s3.tfvars"
