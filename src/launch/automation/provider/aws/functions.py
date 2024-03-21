@@ -12,7 +12,8 @@ def assume_role(
 ) -> None:
     logger.info("Assuming the IAM deployment role")
 
-    profile = provider_config["aws"]["role_arn"]
+    provider = provider_config["provider"]
+    profile = provider_config[provider]["role_arn"]
 
     try:
         sts_credentials = json.loads(
@@ -22,7 +23,7 @@ def assume_role(
                     "sts",
                     "assume-role",
                     "--role-arn",
-                    provider_config["aws"]["role_arn"],
+                    provider_config[provider]["role_arn"],
                     "--role-session-name",
                     "caf-build-agent",
                 ]
@@ -69,7 +70,7 @@ def assume_role(
                 "configure",
                 "set",
                 f"profile.{profile}.region",
-                provider_config["aws"]["region"],
+                provider_config[provider]["region"],
             ]
         )
     except subprocess.CalledProcessError as e:

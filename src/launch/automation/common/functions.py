@@ -6,6 +6,8 @@ import pathlib
 import shutil
 import string
 import subprocess
+from pathlib import Path
+from typing import Callable
 
 from git import Repo
 from ruamel.yaml import YAML
@@ -116,35 +118,50 @@ def make_configure() -> None:
         raise RuntimeError(f"An error occurred: {str(e)}") from e
 
 
-def deploy_remote_state(provider_config: dict) -> None:
-    run_list = ["make"]
+def traverse_with_callback(
+    dictionary: dict,
+    callback: Callable,
+    current_path: Path = Path("platform"),
+    **kwargs,
+) -> dict:
+    """
+    Recursively traverses a dictionary and applies a callback function. The callback function is expected to return a dictionary, which will replace the current dictionary. If the callback function returns None, the current dictionary will be used. The callback function is expected to accept the following keyword arguments:
+    - key: The current key in the dictionary
+    - value: The current value in the dictionary
+    - dictionary: The current dictionary being traversed
+    - current_path: The current path in the dictionary
+    - **kwargs: Additional keyword arguments to pass to the callback function
 
-    if provider_config["az"].get("name_prefix"):
-        run_list.append(f"NAME_PREFIX={provider_config['az'].get('name_prefix')}")
-    if provider_config["az"].get("region"):
-        run_list.append(f"REGION={provider_config['az'].get('region')}")
-    if provider_config["az"].get("environment"):
-        run_list.append(f"ENVIRONMENT={provider_config['az'].get('environment')}")
-    if provider_config["az"].get("env_instance"):
-        run_list.append(f"ENV_INSTANCE={provider_config['az'].get('env_instance')}")
-    if provider_config["az"].get("container_name"):
-        run_list.append(f"CONTAINER_NAME={provider_config['az'].get('container_name')}")
-    if provider_config["az"].get("storage_account_name"):
-        run_list.append(
-            f"STORAGE_ACCOUNT_NAME={provider_config['az'].get('storage_account_name')}"
-        )
-    if provider_config["az"].get("resource_group_name"):
-        run_list.append(
-            f"RESOURCE_GROUP_NAME={provider_config['az'].get('resource_group_name')}"
-        )
+    Args:
+        dictionary (dict): The dictionary to traverse.
+        callback (Callable): The callback function to apply to each key-value pair.
+        current_path (Path, optional): The current path in the dictionary. Defaults to Path("platform").
+        **kwargs: Additional keyword arguments to pass to the callback function.
 
-    run_list.append("terragrunt/remote_state/azure")
-
-    logger.info(f"Running {run_list}")
-    try:
-        subprocess.run(run_list, check=True)
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"An error occurred: {str(e)}") from e
+    Returns:
+        dict: The modified dictionary after applying the callback function.
+    """
+    data = None
+    if isinstance(dictionary, dict):
+        for key, value in list(dictionary.items()):
+            kwargs["nested_dict"] = dictionary
+            data = callback(
+                key=key,
+                value=value,
+                dictionary=dictionary,
+                current_path=current_path,
+                **kwargs,
+            )
+            if not data:
+                traverse_with_callback(
+                    dictionary=value,
+                    callback=callback,
+                    current_path=current_path / Path(key),
+                    **kwargs,
+                )
+    elif isinstance(dict, list):
+        pass
+    return data or dictionary
 
 
 def discover_files(
