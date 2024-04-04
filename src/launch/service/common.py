@@ -7,9 +7,14 @@ from pathlib import Path
 from typing import List
 
 import yaml
+from git.repo import Repo
 from jinja2 import Environment, FileSystemLoader
 
 from launch import BUILD_DEPENDENCIES_DIR, SERVICE_SKELETON, SKELETON_BRANCH
+from launch.automation.common.functions import (
+    extract_uuid_key,
+    recursive_dictionary_merge,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +54,10 @@ def callback_copy_properties_files(
         kwargs["nested_dict"][
             key
         ] = f"{BUILD_DEPENDENCIES_DIR}/{relative_path}/terraform.tfvars"
-        if kwargs.get("uuid", False):
-            kwargs["nested_dict"]["uuid"] = f"{str(uuid.uuid4())[:6]}"
+    elif key == "uuid":
+        kwargs["nested_dict"]["uuid"] = value
+    if kwargs.get("uuid", False):
+        kwargs["nested_dict"]["uuid"] = f"{str(uuid.uuid4())[:6]}"
 
     return kwargs["nested_dict"]
 
@@ -186,4 +193,13 @@ def input_data_validation(input_data: dict) -> dict:
         logger.info(f"No skeleton tag provided, using default: {SKELETON_BRANCH}")
         input_data["skeleton"]["tag"] = SKELETON_BRANCH
 
+    return input_data
+
+
+def determine_existing_uuid(input_data: dict, repository: Repo) -> dict:
+    launch_config_path = Path(repository.working_dir).joinpath(".launch_config")
+    launch_config = json.loads(launch_config_path.read_text())
+    platform_config = launch_config["platform"]
+    uuid_dict = extract_uuid_key(platform_config)
+    recursive_dictionary_merge(input_data, uuid_dict)
     return input_data

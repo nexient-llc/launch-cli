@@ -23,6 +23,7 @@ from launch.service.common import (
     callback_copy_properties_files,
     callback_create_directories,
     copy_and_render_templates,
+    determine_existing_uuid,
     input_data_validation,
     list_jinja_templates,
     write_text,
@@ -292,7 +293,9 @@ def update(
         callback=callback_create_directories,
         base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
     )
-
+    input_data["platform"] = determine_existing_uuid(
+        input_data=input_data["platform"], repository=repository
+    )
     input_data["platform"] = traverse_with_callback(
         dictionary=input_data["platform"],
         callback=callback_copy_properties_files,
