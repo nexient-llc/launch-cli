@@ -2,59 +2,64 @@ import json
 import logging
 import re
 import shutil
+import uuid
 from pathlib import Path
 from typing import List
 
 import yaml
+from git.repo import Repo
 from jinja2 import Environment, FileSystemLoader
 
-from launch import BUILD_DEPEPENDENCIES_DIR, SERVICE_SKELETON, SKELETON_BRANCH
+from launch import BUILD_DEPENDENCIES_DIR, SERVICE_SKELETON, SKELETON_BRANCH
+from launch.automation.common.functions import (
+    extract_uuid_key,
+    recursive_dictionary_merge,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def create_directories(
-    base_path: str, platform_data: dict, current_path: str = "platform"
-) -> None:
-    if isinstance(platform_data, dict):
-        for key, value in platform_data.items():
-            if isinstance(value, dict):
-                next_path = Path(base_path) / current_path / key
-                next_path.mkdir(parents=True, exist_ok=True)
-                create_directories(base_path, value, Path(current_path) / key)
-            else:
-                next_path = Path(base_path) / current_path
-                next_path.mkdir(parents=True, exist_ok=True)
-    elif isinstance(platform_data, list):
-        pass
+def callback_create_directories(
+    key,
+    value,
+    **kwargs,
+) -> bool:
+    if isinstance(value, dict):
+        next_path = Path(kwargs["base_path"]) / kwargs["current_path"] / Path(key)
+        next_path.mkdir(parents=True, exist_ok=True)
+        return False
+    else:
+        next_path = Path(kwargs["base_path"]) / kwargs["current_path"]
+        next_path.mkdir(parents=True, exist_ok=True)
+
+    return True
 
 
-def copy_properties_files(
-    base_path: Path, platform_data: dict, current_path: Path = Path("platform")
-) -> dict:
-    if isinstance(platform_data, dict):
-        for key, value in platform_data.items():
-            if isinstance(value, dict):
-                copy_properties_files(
-                    base_path=base_path,
-                    platform_data=value,
-                    current_path=current_path / Path(key),
-                )
-            elif key == "properties_file":
-                dest_path = base_path / current_path
-                dest_path.mkdir(parents=True, exist_ok=True)
-                logger.info(f"Copying {base_path}/{value} to {dest_path}")
-                shutil.copy(
-                    base_path / Path(value), dest_path / Path("terraform.tfvars")
-                )
+def callback_copy_properties_files(
+    key,
+    value,
+    **kwargs,
+) -> bool:
+    if isinstance(value, dict):
+        return None
+    elif key == "properties_file":
+        dest_path = kwargs["base_path"] / kwargs["current_path"]
+        dest_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Copying {kwargs.get('base_path')}/{value} to {dest_path}")
+        shutil.copy(
+            kwargs["base_path"] / Path(value), dest_path / Path("terraform.tfvars")
+        )
 
-                relative_path = str(dest_path).removeprefix(base_path)
-                platform_data[
-                    key
-                ] = f"{BUILD_DEPEPENDENCIES_DIR}/{relative_path}/{value.split('/')[-1]}"
-    elif isinstance(platform_data, list):
-        pass
-    return platform_data
+        relative_path = str(dest_path).removeprefix(kwargs["base_path"])
+        kwargs["nested_dict"][
+            key
+        ] = f"{BUILD_DEPENDENCIES_DIR}/{relative_path}/terraform.tfvars"
+    elif key == "uuid":
+        kwargs["nested_dict"]["uuid"] = value
+    if kwargs.get("uuid", False):
+        kwargs["nested_dict"]["uuid"] = f"{str(uuid.uuid4())[:6]}"
+
+    return kwargs["nested_dict"]
 
 
 def list_jinja_templates(base_dir: str) -> tuple:
@@ -85,6 +90,10 @@ def render_jinja_template(
     env = Environment(loader=FileSystemLoader(template_path.parent))
     template = env.get_template(template_path.name)
     template_data["data"]["path"] = str(destination_dir)
+    template_data["data"]["config"]["dir_dict"] = get_value_by_path(
+        template_data["data"]["config"]["platform"],
+        str(destination_dir)[(str(destination_dir).find("platform") + 9) :],
+    )
     output = template.render(template_data)
     destination_path = destination_dir / file_name
 
@@ -97,6 +106,17 @@ def create_specific_path(base_path: Path, path_parts: list) -> list:
     specific_path = base_path.joinpath(*path_parts)
     specific_path.mkdir(parents=True, exist_ok=True)
     return [specific_path]
+
+
+def get_value_by_path(data: dict, path: str) -> dict:
+    keys = path.split("/")
+    val = data
+    for key in keys:
+        if isinstance(val, dict):
+            val = val.get(key)
+        else:
+            return None
+    return val
 
 
 def expand_wildcards(
@@ -173,4 +193,13 @@ def input_data_validation(input_data: dict) -> dict:
         logger.info(f"No skeleton tag provided, using default: {SKELETON_BRANCH}")
         input_data["skeleton"]["tag"] = SKELETON_BRANCH
 
+    return input_data
+
+
+def determine_existing_uuid(input_data: dict, repository: Repo) -> dict:
+    launch_config_path = Path(repository.working_dir).joinpath(".launch_config")
+    launch_config = json.loads(launch_config_path.read_text())
+    platform_config = launch_config["platform"]
+    uuid_dict = extract_uuid_key(platform_config)
+    recursive_dictionary_merge(input_data, uuid_dict)
     return input_data

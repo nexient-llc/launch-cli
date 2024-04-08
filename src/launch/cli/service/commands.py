@@ -8,20 +8,22 @@ import click
 from git import Repo
 
 from launch import (
-    BUILD_DEPEPENDENCIES_DIR,
+    BUILD_DEPENDENCIES_DIR,
     CODE_GENERATION_DIR_SUFFIX,
     GITHUB_ORG_NAME,
     INIT_BRANCH,
     MAIN_BRANCH,
 )
+from launch.automation.common.functions import traverse_with_callback
 from launch.cli.github.access.commands import set_default
 from launch.github.auth import get_github_instance
 from launch.github.repo import create_repository, repo_exist
 from launch.local_repo.repo import checkout_branch, clone_repository, push_branch
 from launch.service.common import (
+    callback_copy_properties_files,
+    callback_create_directories,
     copy_and_render_templates,
-    copy_properties_files,
-    create_directories,
+    determine_existing_uuid,
     input_data_validation,
     list_jinja_templates,
     write_text,
@@ -81,6 +83,12 @@ logger = logging.getLogger(__name__)
     help="The git commit message to use when creating a commit. Defaults to 'Initial commit'.",
 )
 @click.option(
+    "--no-uuid",
+    is_flag=True,
+    default=False,
+    help="If set, it will not generate a UUID to be used in skeleton files.",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -101,6 +109,7 @@ def create(
     in_file: IO[Any],
     skip_commit: bool,
     git_message: str,
+    no_uuid: bool,
     dry_run: bool,
 ):
     """Creates a new service."""
@@ -147,13 +156,17 @@ def create(
         new_branch=True,
     )
 
-    create_directories(
-        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}",
-        platform_data=input_data["platform"],
+    traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_create_directories,
+        base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
     )
-    input_data["platform"] = copy_properties_files(
-        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
-        platform_data=input_data["platform"],
+
+    input_data["platform"] = traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_copy_properties_files,
+        base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
+        uuid=not no_uuid,
     )
     write_text(
         data=input_data,
@@ -204,6 +217,12 @@ def create(
     help="The git commit message to use when creating a commit. Defaults to 'bot: launch service update commit'.",
 )
 @click.option(
+    "--uuid",
+    is_flag=True,
+    default=False,
+    help="If set, it will generate a new UUID to be used in skeleton files.",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -218,6 +237,7 @@ def update(
     skip_git: bool,
     skip_commit: bool,
     git_message: str,
+    uuid: bool,
     dry_run: bool,
 ):
     """Updates a service."""
@@ -228,9 +248,11 @@ def update(
         return
 
     service_path = f"{Path.cwd()}/{name}"
-    if not Path(service_path).exists():
-        click.secho(f"Error: Path {service_path} does not exist.", fg="red")
-        return
+
+    if skip_git:
+        if not Path(service_path).exists():
+            click.secho(f"Error: Path {service_path} does not exist.", fg="red")
+            return
 
     input_data = json.load(in_file)
     input_data = input_data_validation(input_data)
@@ -256,27 +278,29 @@ def update(
         repository = clone_repository(
             repository_url=repository.clone_url, target=name, branch=main_branch
         )
-        checkout_branch(
-            repository=repository,
-            target_branch=remote_branch,
-            new_branch=True,
-        )
+        checkout_branch(repository=repository, target_branch=remote_branch)
     else:
         repository = Repo(service_path)
         try:
-            shutil.rmtree(f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}")
+            shutil.rmtree(f"{service_path}/{BUILD_DEPENDENCIES_DIR}")
         except FileNotFoundError:
             logger.info(
-                f"Directory not found when trying to delete: {service_path}/{BUILD_DEPEPENDENCIES_DIR}"
+                f"Directory not found when trying to delete: {service_path}/{BUILD_DEPENDENCIES_DIR}"
             )
 
-    create_directories(
-        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}",
-        platform_data=input_data["platform"],
+    traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_create_directories,
+        base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
     )
-    input_data["platform"] = copy_properties_files(
-        base_path=f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}/",
-        platform_data=input_data["platform"],
+    input_data["platform"] = determine_existing_uuid(
+        input_data=input_data["platform"], repository=repository
+    )
+    input_data["platform"] = traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_copy_properties_files,
+        base_path=f"{service_path}/{BUILD_DEPENDENCIES_DIR}/",
+        uuid=uuid,
     )
     write_text(
         data=input_data,
@@ -307,7 +331,7 @@ def update(
 @click.option(
     "--work-dir",
     default=Path.cwd(),
-    help="",
+    help="The work directory to generate launch platform files. Defaults to the current directory.",
 )
 @click.option(
     "--dry-run",
@@ -368,20 +392,29 @@ def generate(
     )
 
     shutil.copytree(
-        f"{service_path}/{BUILD_DEPEPENDENCIES_DIR}",
-        f"{singlerun_path}/{BUILD_DEPEPENDENCIES_DIR}",
+        f"{service_path}/{BUILD_DEPENDENCIES_DIR}",
+        f"{singlerun_path}/{BUILD_DEPENDENCIES_DIR}",
         dirs_exist_ok=True,
+    )
+    shutil.copyfile(
+        f"{service_path}/.launch_config", f"{singlerun_path}/.launch_config"
     )
 
     # Creating directories and copying properties files
-    create_directories(singlerun_path, input_data["platform"])
-    copy_properties_files(
-        base_path=singlerun_path, platform_data=input_data["platform"]
+    traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_create_directories,
+        base_path=singlerun_path,
+    )
+    traverse_with_callback(
+        dictionary=input_data["platform"],
+        callback=callback_copy_properties_files,
+        base_path=singlerun_path,
     )
 
     # Placing Jinja templates
     template_paths, jinja_paths = list_jinja_templates(
-        singlerun_path / Path(f"{BUILD_DEPEPENDENCIES_DIR}/jinja2")
+        singlerun_path / Path(f"{BUILD_DEPENDENCIES_DIR}/jinja2")
     )
     copy_and_render_templates(
         base_dir=singlerun_path,
@@ -399,7 +432,7 @@ def generate(
 @click.option(
     "--work-dir",
     default=Path.cwd(),
-    help="",
+    help="The work directory to clean the launch generated files from. Defaults to the current directory.",
 )
 @click.option(
     "--dry-run",

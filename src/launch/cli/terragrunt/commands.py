@@ -37,13 +37,13 @@ logger = logging.getLogger(__name__)
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get("TARGETENV", "dev"),
+    default=os.environ.get("TARGETENV", "sandbox"),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
     "--provider-config",
-    default=None,
-    help="Provider config is used for any specific config needed for certain providers. For example, AWS needs additional parameters to assume a deployment role. e.x {'provider':'aws','aws':{'role_arn':'arn:aws:iam::012345678912:role/myRole','region':'us-east-2'}}",
+    required=True,
+    help="Provider config is used for any specific config needed for certain providers. For example, AWS needs additional parameters to assume a deployment role. e.x {'provider':'aws','aws':{'role_arn':'arn:aws:iam::012345678912:role/myRole'}}",
 )
 @click.option(
     "--skip-git",
@@ -64,10 +64,9 @@ logger = logging.getLogger(__name__)
     help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
-    "--is-pipeline-resources",
-    is_flag=True,
-    default=False,
-    help="If set, this changes the path to the infrastructure directory for deployment to run terragrunt against.",
+    "--pipeline-resource",
+    default=None,
+    help="If set, this will run terragrunt against the specified pipeline resource. For example, setting this to 'pipeline' will run terragrunt against pipeline resources, 'webhooks' will run terragrunt against webhooks if this services uses them. This defaults to None, which will tell the command to run the terragrunt command against the service resources",
 )
 @click.option(
     "--path",
@@ -106,7 +105,7 @@ def plan(
     skip_git: bool,
     skip_generation: bool,
     skip_diff: bool,
-    is_pipeline_resources: bool,
+    pipeline_resource: str,
     path: str,
     override: dict,
     dry_run: bool,
@@ -152,7 +151,7 @@ def plan(
         target_environment=target_environment,
         provider_config=json.loads(provider_config),
         skip_diff=skip_diff,
-        is_pipeline_resources=is_pipeline_resources,
+        pipeline_resource=pipeline_resource,
         path=path,
         override=override,
     )
@@ -184,7 +183,7 @@ def plan(
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get("TARGETENV", "dev"),
+    default=os.environ.get("TARGETENV", "sandbox"),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
@@ -211,10 +210,9 @@ def plan(
     help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
-    "--is-pipeline-resources",
-    is_flag=True,
-    default=False,
-    help="If set, this changes the path to the infrastructure directory for deployment to run terragrunt against.",
+    "--pipeline-resource",
+    default=None,
+    help="If set, this will set the specified pipeline resource to run terragrunt against. Defaults to None. i.e. 'pipeline-provider'",
 )
 @click.option(
     "--path",
@@ -253,7 +251,7 @@ def apply(
     skip_git: bool,
     skip_generation: bool,
     skip_diff: bool,
-    is_pipeline_resources: bool,
+    pipeline_resource: str,
     path: str,
     override: dict,
     dry_run: bool,
@@ -299,7 +297,7 @@ def apply(
         target_environment=target_environment,
         provider_config=json.loads(provider_config),
         skip_diff=skip_diff,
-        is_pipeline_resources=is_pipeline_resources,
+        pipeline_resource=pipeline_resource,
         path=path,
         override=override,
     )
@@ -331,7 +329,7 @@ def apply(
 )
 @click.option(
     "--target-environment",
-    default=os.environ.get("TARGETENV", "dev"),
+    default=os.environ.get("TARGETENV", "sandbox"),
     help="The target environment to run the terragrunt command against. Defaults to sandbox.",
 )
 @click.option(
@@ -358,10 +356,9 @@ def apply(
     help="If set, it will ignore checking the diff between the pipeline and service changes.",
 )
 @click.option(
-    "--is-pipeline-resources",
-    is_flag=True,
-    default=False,
-    help="If set, this changes the path to the infrastructure directory for deployment to run terragrunt against.",
+    "--pipeline-resource",
+    default=None,
+    help="If set, this will set the specified pipeline resource to run terragrunt against. Defaults to None. i.e. 'pipeline-azdo'",
 )
 @click.option(
     "--path",
@@ -400,7 +397,7 @@ def destroy(
     skip_git: bool,
     skip_generation: bool,
     skip_diff: bool,
-    is_pipeline_resources: bool,
+    pipeline_resource: str,
     path: str,
     override: dict,
     dry_run: bool,
@@ -446,7 +443,7 @@ def destroy(
         target_environment=target_environment,
         provider_config=json.loads(provider_config),
         skip_diff=skip_diff,
-        is_pipeline_resources=is_pipeline_resources,
+        pipeline_resource=pipeline_resource,
         path=path,
         override=override,
     )
