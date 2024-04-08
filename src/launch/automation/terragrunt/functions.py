@@ -1,18 +1,21 @@
+import json
 import logging
 import os
 import subprocess
+from pathlib import Path
 
 from git import Repo
 
-from launch import CODE_GENERATION_DIR_SUFFIX
+from launch import BUILD_DEPENDENCIES_DIR, CODE_GENERATION_DIR_SUFFIX
 from launch.automation.common.functions import (
     check_git_changes,
-    deploy_remote_state,
     install_tool_versions,
     make_configure,
     set_netrc,
+    traverse_with_callback,
 )
 from launch.automation.provider.aws.functions import assume_role
+from launch.automation.provider.az.functions import callback_deploy_remote_state
 
 logger = logging.getLogger(__name__)
 
@@ -122,11 +125,13 @@ def prepare_for_terragrunt(
     target_environment: str,
     provider_config: dict,
     skip_diff: bool,
-    is_pipeline_resources: bool,
+    pipeline_resource: str,
     path: str,
     override: dict,
 ):
     os.chdir(f"{path}/{name}{CODE_GENERATION_DIR_SUFFIX}")
+    with open(f"{path}/{name}{CODE_GENERATION_DIR_SUFFIX}/.launch_config", "r") as f:
+        launch_config = json.load(f)
 
     install_tool_versions(
         file=override["tool_versions_file"],
@@ -136,48 +141,35 @@ def prepare_for_terragrunt(
     # If the Provider is AZURE there is a prequisite requirement of logging into azure
     # i.e. az login, or service principal is already applied to the environment.
     # If the provider is AWS, we need to assume the role for deployment.
+    provider = provider_config["provider"]
     if provider_config:
-        if provider_config["provider"] == "aws":
+        if provider == "aws":
             assume_role(
                 provider_config=provider_config,
                 repository_name=name,
                 target_environment=target_environment,
             )
-        if provider_config["provider"] == "az":
+        if provider.startswith("az"):
             make_configure()
-            deploy_remote_state(
+            traverse_with_callback(
+                dictionary=launch_config["platform"],
+                callback=callback_deploy_remote_state,
+                base_path=f"{path}/{name}{CODE_GENERATION_DIR_SUFFIX}/{BUILD_DEPENDENCIES_DIR}/",
+                naming_prefix=launch_config["naming_prefix"],
+                target_environment=target_environment,
                 provider_config=provider_config,
             )
 
-    git_diff = check_git_changes(
-        repository=repository,
-        commit_id=commit_sha,
-        main_branch=override["main_branch"],
-        directory=override["infrastructure_dir"],
-    )
-
-    if skip_diff:
-        if is_pipeline_resources:
-            exec_dir = f"{override['infrastructure_dir']}"
-        else:
-            exec_dir = f"{override['environment_dir']}/{target_environment}"
+    if pipeline_resource:
+        exec_dir = Path(
+            f"{override['infrastructure_dir']}/{pipeline_resource}-{provider}/{target_environment}"
+        )
     else:
-        if git_diff & is_pipeline_resources:
-            if provider_config.provider == "aws":
-                exec_dir = f"{override['infrastructure_dir']}"
-            else:
-                raise RuntimeError(
-                    f"Provider: {provider_config.provider}, is_pipeline_resources: {is_pipeline_resources}, and running terragrunt on infrastructure directory: {override['infrastructure_dir']} is not supported"
-                )
-        elif not git_diff and is_pipeline_resources:
-            raise RuntimeError(
-                f"No {override['infrastructure_dir']} folder, however, is_pipeline_resources: {is_pipeline_resources}"
-            )
-        elif git_diff and not is_pipeline_resources:
-            raise RuntimeError(
-                f"Changes found in {override['infrastructure_dir']} folder, however, is_pipeline_resources: {is_pipeline_resources}"
-            )
-        else:
-            exec_dir = f"{override['environment_dir']}/{target_environment}"
+        exec_dir = Path(f"{override['environment_dir']}/{target_environment}")
+
+    if not (exec_dir).exists():
+        message = f"Error: Path {exec_dir} does not exist."
+        logger.error(message)
+        raise FileNotFoundError(message)
 
     os.chdir(exec_dir)

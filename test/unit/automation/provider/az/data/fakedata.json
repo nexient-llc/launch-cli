@@ -1,0 +1,34 @@
+{
+    "simple_dict": {
+        "key1": "value1",
+        "uuid": "1234-5678"
+    },
+    "nested_dict": {
+        "sandbox": {
+            "us-east-1": {
+                "000": {
+                    "uuid": "1234-5678",
+                    "properties_files": "value"
+                }
+            }
+        }
+    },
+    "kwargs": {
+        "naming_prefix": "test-prefix",
+        "target_environment": "production",
+        "provider_config": {"key": "value"},
+        "current_path": "platform/service/sandbox/us-east-1/000"
+    },
+    "provider_config": {
+        "provider": "azure",
+        "azure": {
+            "container_name": "test_container",
+            "storage_account_name": "test_storage_account",
+            "resource_group_name": "test_resource_group"
+        }
+    },
+    "callback": {
+        "key": "uuid",
+        "value": "12345678"
+    }
+}
