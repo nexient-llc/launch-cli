@@ -66,7 +66,7 @@ logger = logging.getLogger(__name__)
 @click.option(
     "--pipeline-resource",
     default=None,
-    help="If set, this will un terragrunt against the specified pipeline resource. For example, setting this to 'pipeline' will run terragrunt against pipeline resources, 'webhooks' will run terragrunt against webhooks if this services uses them. This defaults to None, which will tell the command to run the terragrunt command against the service resources",
+    help="If set, this will run terragrunt against the specified pipeline resource. For example, setting this to 'pipeline' will run terragrunt against pipeline resources, 'webhooks' will run terragrunt against webhooks if this services uses them. This defaults to None, which will tell the command to run the terragrunt command against the service resources",
 )
 @click.option(
     "--path",
