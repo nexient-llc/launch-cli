@@ -169,7 +169,7 @@ def prepare_for_terragrunt(
 
     if not (exec_dir).exists():
         message = f"Error: Path {exec_dir} does not exist."
-        logger.error(message, fg="red")
+        logger.error(message)
         raise FileNotFoundError(message)
 
     os.chdir(exec_dir)
